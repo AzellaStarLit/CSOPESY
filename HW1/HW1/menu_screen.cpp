@@ -51,11 +51,13 @@ void report_util(){
 
 void clear() {
 	// Clear the screen here
-	std::cout << "clear command recognized. Doing something.\n";
+	std::system("cls");
+	print_header();
 }
 
 void exit_program() {
-	std::cout << "exit_program command recognized. Doing something.\n";
+	// Exit the screen here
+	std::exit(0);
 }
 
 int main() {
