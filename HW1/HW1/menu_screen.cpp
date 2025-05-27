@@ -13,6 +13,17 @@ LABARRETE, Lance Desmond
 #include <iomanip>
 #include <sstream>
 
+// Global functions for initialization
+void print_header();
+void initialize();
+void scheduler_test();
+void scheduler_stop();
+void report_util();
+void clear();
+void exit_program();
+
+
+// Class Declaration of the console
 class Console {
 private:
 	std::string name;
@@ -21,6 +32,7 @@ private:
 	std::string creationTimestamp;
 
 	void setTimestamp() {
+		// Declares a timestamp
 		std::time_t now = std::time(nullptr);
 		std::tm* localTime = std::localtime(&now);
 		std::ostringstream oss;
@@ -43,6 +55,7 @@ public:
 	}
 
 	void draw() {
+		// Draws the screen
 		std::cout << "\033[36m--- Screen: " << name << " ---\033[0m\n";
 		std::cout << "Process Name: " << name << "\n";
 		std::cout << "Instruction: Line " << currentLine << " / " << totalLines << "\n";
@@ -53,7 +66,10 @@ public:
 		while (true) {
 			std::cout << "[" << name << "]> ";
 			std::getline(std::cin, input);
-			if (input == "exit") break;
+			if (input == "exit"){   // 
+				clear();
+				break;
+			}
 		}
 	}
 };
@@ -61,7 +77,7 @@ public:
 std::unordered_map<std::string, Console> screens;
 
 void print_header() {
-
+	// Prints the OS Main Menu
 	std::cout << " ::::::::   ::::::::   ::::::::  :::::::::  :::::::::: ::::::::  :::   :::\n";
 	std::cout << ":+:    :+: :+:    :+: :+:    :+: :+:    :+: :+:       :+:    :+: :+:   :+:\n";
 	std::cout << "+:+        +:+        +:+    +:+ +:+    +:+ +:+       +:+         +:+ +:+ \n";
@@ -106,6 +122,7 @@ void exit_program() {
 }
 
 void screen_command(const std::string& command) {
+	// Function that encompasses all screen commands
 	std::istringstream iss(command);
 	std::string screenCmd, flag, name;
 	iss >> screenCmd >> flag >> name;
@@ -123,7 +140,7 @@ void screen_command(const std::string& command) {
 			auto it = screens.find(name);
 			if (it != screens.end()) {
 				std::cout << "Resuming screen '" << name << "'...\n";
-				it->second.draw();
+				it->second.draw(); //Draws the screen when screen -r <name> is initialized 
 			} else {
 				std::cout << "No such screen named '" << name << "'.\n";
 			}
@@ -137,6 +154,7 @@ int main() {
 	
 	std::string command;
 	std::unordered_map<std::string, void(*)()> commandMap = {
+		// List of commands for the Main Menu
 		{"initialize", initialize},
 		{"scheduler-test", scheduler_test},
 		{"scheduler-stop", scheduler_stop},
