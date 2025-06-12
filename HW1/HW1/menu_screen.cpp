@@ -14,6 +14,7 @@ LABARRETE, Lance Desmond
 #include <sstream>
 
 #include "Utilities.h"
+#include "Console.h"
 
 
 // Global functions for initialization
@@ -27,6 +28,7 @@ void exit_program();
 
 
 // Class Declaration of the console
+/*
 class Console {
 private:
 	std::string name;
@@ -76,6 +78,7 @@ public:
 		}
 	}
 };
+*/
 
 std::unordered_map<std::string, Console> screens;
 
@@ -139,6 +142,8 @@ int main() {
 			std::cout << "\033[31mCommand not recognized. Please try again.\n\033[0m";
 			std::cout << "\033[1;33mType \'exit\' to quit, \'clear\' to clear the screen\n\033[0m";
 		}
+
+		clear();
 	}
 
 	return 0;
