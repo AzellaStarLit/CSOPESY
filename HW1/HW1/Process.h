@@ -8,7 +8,6 @@
 class Process {
 private:
     std::string name;
-    int currentLine;
     int totalLines;
     std::string creationTimestamp;
     std::vector<std::string> instructions;
@@ -24,10 +23,13 @@ public:
     void setTimestamp();
     void add_instruction(const std::string& instr);
     void generate_instructions();
+	void execute_instruction(const std::string& instruction);
+	void execute_print(const std::string& msg);
     std::string getName() const;
     std::string getCurrentInstruction() const;
 	int getCurrentLine() const;
     int getTotalLines() const;
+
 	~Process() = default; // Default destructor
 };
 

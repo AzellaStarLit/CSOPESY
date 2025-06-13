@@ -2,6 +2,10 @@
 #include <ctime>
 #include <iomanip>
 #include <sstream>
+#include <unordered_map>
+#include <functional>
+
+std::unordered_map<std::string, std::function<void(const std::string&)>> instructionList;
 
 void Process::setTimestamp() {
     std::time_t now = std::time(nullptr);
@@ -12,18 +16,24 @@ void Process::setTimestamp() {
 }
 
 Process::Process()
-    : name("default"), currentLine(0), totalLines(0), instructionPointer(0) {
+    : name("default"), instructionPointer(0), totalLines(0) {
     setTimestamp();
+    instructionList["PRINT"] = [this](const std::string& msg) {
+        execute_print(msg); };
 }
 
 Process::Process(const std::string& name)
-    : name(name), currentLine(0), totalLines(0), instructionPointer(0) {
+    : name(name), instructionPointer(0), totalLines(0) {
     setTimestamp();
+	instructionList["PRINT"] = [this](const std::string& msg) { 
+        execute_print(msg); };
 }
 
 Process::Process(const std::string& name, int instructionCount)
-    : name(name), currentLine(0), totalLines(instructionCount), instructionPointer(0) {
+    : name(name), instructionPointer(0), totalLines(instructionCount) {
     setTimestamp();
+    instructionList["PRINT"] = [this](const std::string& msg) {
+        execute_print(msg); };
 }
 
 void Process::run_print() {
@@ -32,7 +42,6 @@ void Process::run_print() {
         std::cout << output << std::endl;
         log.push_back(output);
         instructionPointer++;
-        currentLine++;
     }
     else {
         std::cout << "Process " << name << " has finished all print commands." << std::endl;
@@ -64,7 +73,7 @@ std::string Process::getCurrentInstruction() const {
 }
 
 int Process::getCurrentLine() const {
-    return currentLine;
+    return instructionPointer;
 }
 
 int Process::getTotalLines() const {
@@ -75,7 +84,37 @@ void Process::generate_instructions() {
     int count = 10;
 
     for (int i = 0; i < count; ++i) {
-        add_instruction("print: Hello from " + name + " [Line " + std::to_string(i + 1) + "]");
+        add_instruction("print: Hello World! from " + name + " [Line " + std::to_string(i + 1) + "]");
 		totalLines = instructions.size();
+    }
+}
+
+void Process::execute_instruction(const std::string& instruction) {
+    size_t parenStart = instruction.find('(');
+    size_t parenEnd = instruction.find(')', parenStart);
+
+    if (parenStart == std::string::npos || parenEnd == std::string::npos) {
+        std::cout << "Invalid instruction format: " << instruction << std::endl;
+        return;
+    }
+
+    std::string command = instruction.substr(0, parenStart);
+    std::string argument = instruction.substr(parenStart + 1, parenEnd - parenStart - 1);
+
+    if (command == "PRINT") {
+        execute_print(argument);
+        instructionPointer++;
+    }
+    else {
+        std::cout << "Unknown command: " << command << std::endl;
+    }
+}
+
+void Process::execute_print(const std::string& msg) {
+    if (msg.empty()) {
+        std::cout << "\"Hello world from" << name << "!\"" << std::endl;
+    }
+    else {
+        std::cout << msg << " from " << name << std::endl;
     }
 }
