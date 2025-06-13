@@ -1,6 +1,12 @@
 #include "Utilities.h"
+#include "ProcessManager.h"
+
 #include <iostream>
 #include <cstdlib>
+#include <vector>
+
+extern ProcessManager processManager;
+extern ConsoleManager consoleManager;
 
 void print_header() {
 	// Prints the OS Main Menu
@@ -21,9 +27,9 @@ void initialize() {
 	std::cout << "initialize command recognized. Doing something.\n";
 }
 
-void scheduler_test() {
-	// Test the scheduler functionality here
-	std::cout << "scheduler_test command recognized. Doing something.\n";
+void scheduler_start() {
+	std::cout << "Starting scheduler and generating processes...\n";
+	processManager.generate_instructions(10, 100, consoleManager);
 }
 
 void scheduler_stop() {

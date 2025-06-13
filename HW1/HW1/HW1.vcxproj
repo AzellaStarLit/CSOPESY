@@ -138,12 +138,14 @@
     <ClCompile Include="ConsoleManager.cpp" />
     <ClCompile Include="menu_screen.cpp" />
     <ClCompile Include="Process.cpp" />
+    <ClCompile Include="ProcessManager.cpp" />
     <ClCompile Include="Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Console.h" />
     <ClInclude Include="ConsoleManager.h" />
     <ClInclude Include="Process.h" />
+    <ClInclude Include="ProcessManager.h" />
     <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

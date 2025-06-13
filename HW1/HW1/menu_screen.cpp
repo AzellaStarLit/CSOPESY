@@ -15,74 +15,45 @@ LABARRETE, Lance Desmond
 
 #include "Utilities.h"
 #include "Console.h"
+#include "ProcessManager.h"
 
 
 // Global functions for initialization
 void print_header();
 void initialize();
-void scheduler_test();
+void scheduler_start();
 void scheduler_stop();
 void report_util();
 void clear();
 void exit_program();
 
-
-// Class Declaration of the console
-/*
-class Console {
-private:
-	std::string name;
-	int currentLine;
-	int totalLines;
-	std::string creationTimestamp;
-
-	void setTimestamp() {
-		// Declares a timestamp
-		std::time_t now = std::time(nullptr);
-		std::tm* localTime = std::localtime(&now);
-		std::ostringstream oss;
-		oss << std::put_time(localTime, "%m/%d/%Y, %I:%M:%S %p");
-		creationTimestamp = oss.str();
-	}
-
-public:
-	Console() : name("default"), currentLine(0), totalLines(100) {
-		setTimestamp();
-	}
-
-	Console(const std::string& name) : name(name), currentLine(0), totalLines(100) {
-		// Get current time and format it
-		std::time_t now = std::time(nullptr);
-		std::tm* localTime = std::localtime(&now);
-		std::ostringstream oss;
-		oss << std::put_time(localTime, "%m/%d/%Y, %I:%M:%S %p");
-		creationTimestamp = oss.str();
-	}
-
-	void draw() {
-		// Draws the screen
-		std::cout << "\033[36m--- Screen: " << name << " ---\033[0m\n";
-		std::cout << "Process Name: " << name << "\n";
-		std::cout << "Instruction: Line " << currentLine << " / " << totalLines << "\n";
-		std::cout << "Created At: " << creationTimestamp << "\n";
-		std::cout << "Type 'exit' to return to the main menu.\n";
-
-		std::string input;
-		while (true) {
-			std::cout << "[" << name << "]> ";
-			std::getline(std::cin, input);
-			if (input == "exit"){
-				clear();
-				break;
-			}
-		}
-	}
-};
-*/
-
+ProcessManager processManager;
+ConsoleManager consoleManager;
 std::unordered_map<std::string, Console> screens;
 
 
+bool screen_command(const std::string& command) {
+	std::istringstream iss(command);
+	std::string screenCmd, flag, name;
+	iss >> screenCmd >> flag >> name;
+
+	if ((flag == "-s" || flag == "-r") && !name.empty()) {
+		if (flag == "-s") {
+			consoleManager.create_screen_with_process(name);
+			return true;
+		}
+		else if (flag == "-r") {
+			consoleManager.resume_screen(name);
+			return true;
+		}
+	}
+	else {
+		std::cout << "\033[31mInvalid screen command. Use: screen -s <name> or screen -r <name>\n\033[0m";
+		return false;
+	}
+}
+
+/*
 void screen_command(const std::string& command) {
 	// Function that encompasses all screen commands
 	std::istringstream iss(command);
@@ -92,7 +63,8 @@ void screen_command(const std::string& command) {
 	if ((flag == "-s" || flag == "-r") && !name.empty()) {
 		if (flag == "-s") {
 			if (screens.find(name) == screens.end()) {
-				screens[name] = Console(name);
+				Process* process = new Process(name);
+				screens[name] = Console(name, process);
 				std::cout << "Screen '" << name << "' created.\n";
 			} else {
 				std::cout << "Screen '" << name << "' already exists. Attaching...\n";
@@ -111,6 +83,7 @@ void screen_command(const std::string& command) {
 		std::cout << "\033[31mInvalid screen command. Use: screen -s <name> or screen -r <name>\n\033[0m";
 	}
 }
+*/
 
 int main() {
 	
@@ -118,12 +91,15 @@ int main() {
 	std::unordered_map<std::string, void(*)()> commandMap = {
 		// List of commands for the Main Menu
 		{"initialize", initialize},
-		{"scheduler-test", scheduler_test},
+		{"scheduler-start", scheduler_start},
 		{"scheduler-stop", scheduler_stop},
 		{"report-util", report_util},
 		{"clear", clear},
 		{"exit", exit_program}
 	};
+
+	// Initialize 10 processes with 10 instructions each
+	scheduler_start();
 
 	print_header();
 
@@ -131,9 +107,11 @@ int main() {
 		std::cout << "> ";
 		std::getline(std::cin, command);
 
+		bool shouldClear = false;
+
 		auto typedCommand = commandMap.find(command);
 		if (command.rfind("screen ", 0) == 0) {
-			screen_command(command);
+			shouldClear = screen_command(command);
 		}	
 		else if (typedCommand != commandMap.end()) {
 			commandMap[command](); // Call the function associated with the command
@@ -143,7 +121,10 @@ int main() {
 			std::cout << "\033[1;33mType \'exit\' to quit, \'clear\' to clear the screen\n\033[0m";
 		}
 
-		clear();
+		if(shouldClear) {
+			clear();
+			shouldClear = false;
+		}
 	}
 
 	return 0;

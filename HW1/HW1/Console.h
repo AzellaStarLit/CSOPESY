@@ -2,6 +2,7 @@
 #define CONSOLE_H
 
 #include <string>
+#include "Process.h"
 
 class Console {
 private:
@@ -9,12 +10,13 @@ private:
     int currentLine;
     int totalLines;
     std::string creationTimestamp;
+    Process* screenProcess;
 
     void setTimestamp();
 
 public:
     Console();
-    Console(const std::string& name);
+    Console(const std::string& name, Process* screenProcess);
     void draw();
 };
 
