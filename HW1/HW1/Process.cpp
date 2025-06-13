@@ -4,6 +4,8 @@
 #include <sstream>
 #include <unordered_map>
 #include <functional>
+#include <chrono>
+#include <fstream>
 
 std::unordered_map<std::string, std::function<void(const std::string&)>> instructionList;
 
@@ -111,10 +113,35 @@ void Process::execute_instruction(const std::string& instruction) {
 }
 
 void Process::execute_print(const std::string& msg) {
+	
+    auto now = std::chrono::system_clock::now();
+	std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+	std::tm local_tm = *std::localtime(&now_c);
+    std::ostringstream oss;
+	oss << std::put_time(&local_tm, "%m/%d/%Y, %I:%M:%S %p");
+    std::string timestamp = oss.str();
+
+	std::string printMessage;
+
+    //TODO: UPDATE TO PRINT CORE
     if (msg.empty()) {
-        std::cout << "\"Hello world from" << name << "!\"" << std::endl;
+        printMessage = "\"Hello world from " + name + "!\"";
     }
     else {
-        std::cout << msg << " from " << name << std::endl;
+        printMessage = msg + " from " + name;
     }
+
+    //Compose string
+	std::string output = timestamp + " - CORE : " + name + " - " + printMessage;
+    std::cout << output << std::endl;
+	
+	//Append to log file
+    std::ofstream logFile("logs/" + name + "_log.txt", std::ios::app);
+    if (logFile.is_open()) {
+        logFile << output << std::endl;
+        logFile.close();
+    } else {
+        std::cerr << "Unable to open log file for writing." << std::endl;
+	}
+
 }
