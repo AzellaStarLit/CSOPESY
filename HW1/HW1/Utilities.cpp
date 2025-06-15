@@ -1,5 +1,6 @@
 #include "Utilities.h"
 #include "ProcessManager.h"
+#include "FCFS.h"
 
 #include <iostream>
 #include <cstdlib>
@@ -29,6 +30,23 @@ void initialize() {
 
 void scheduler_start() {
 	std::cout << "Starting scheduler and generating processes...\n";
+
+	static FCFS scheduler; 
+
+	for(int i = 1; i <= 10; i++){
+		std::string name = "process_" + std::to_string(i);
+		Process* proc = new Process(name, 100);
+
+		for (int j = 0; j < 100; ++j) {
+			proc->add_instruction("");
+		}
+
+		scheduler.addProcess(proc);
+	}
+
+	scheduler.start();
+
+
 	processManager.generate_instructions(10, 100, consoleManager);
 }
 

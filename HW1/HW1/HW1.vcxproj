@@ -136,6 +136,7 @@
   <ItemGroup>
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="ConsoleManager.cpp" />
+    <ClCompile Include="FCFS.cpp" />
     <ClCompile Include="menu_screen.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessManager.cpp" />
@@ -144,6 +145,8 @@
   <ItemGroup>
     <ClInclude Include="Console.h" />
     <ClInclude Include="ConsoleManager.h" />
+    <ClInclude Include="FCFS.h" />
+    <ClInclude Include="Header.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="ProcessManager.h" />
     <ClInclude Include="Utilities.h" />

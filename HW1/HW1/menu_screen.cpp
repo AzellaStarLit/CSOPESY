@@ -101,7 +101,7 @@ int main() {
 	// Initialize 10 processes with 10 instructions each
 	scheduler_start();
 
-
+	/*
 	// THIS PART OF THE CODE IS FOR TESTING PURPOSES ONLY
 	Process p("TestProcess");
 
@@ -113,7 +113,7 @@ int main() {
 	//Sample to test logs
 	p.show_log();
 
-
+	*/
 
 	print_header();
 

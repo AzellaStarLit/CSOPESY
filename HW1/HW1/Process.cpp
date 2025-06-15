@@ -21,21 +21,21 @@ Process::Process()
     : name("default"), instructionPointer(0), totalLines(0) {
     setTimestamp();
     instructionList["PRINT"] = [this](const std::string& msg) {
-        execute_print(msg); };
+        execute_print(msg, -1); };
 }
 
 Process::Process(const std::string& name)
     : name(name), instructionPointer(0), totalLines(0) {
     setTimestamp();
 	instructionList["PRINT"] = [this](const std::string& msg) { 
-        execute_print(msg); };
+        execute_print(msg, -1); };
 }
 
 Process::Process(const std::string& name, int instructionCount)
     : name(name), instructionPointer(0), totalLines(instructionCount) {
     setTimestamp();
     instructionList["PRINT"] = [this](const std::string& msg) {
-        execute_print(msg); };
+        execute_print(msg, -1); };
 }
 
 void Process::run_print() {
@@ -91,7 +91,7 @@ void Process::generate_instructions() {
     }
 }
 
-void Process::execute_instruction(const std::string& instruction) {
+void Process::execute_instruction(const std::string& instruction, int coreId) {
     size_t parenStart = instruction.find('(');
     size_t parenEnd = instruction.find(')', parenStart);
 
@@ -104,7 +104,7 @@ void Process::execute_instruction(const std::string& instruction) {
     std::string argument = instruction.substr(parenStart + 1, parenEnd - parenStart - 1);
 
     if (command == "PRINT") {
-        execute_print(argument);
+        execute_print(argument, coreId);
         instructionPointer++;
     }
     else {
@@ -112,7 +112,7 @@ void Process::execute_instruction(const std::string& instruction) {
     }
 }
 
-void Process::execute_print(const std::string& msg) {
+void Process::execute_print(const std::string& msg, int coreId) {
 	
     auto now = std::chrono::system_clock::now();
 	std::time_t now_c = std::chrono::system_clock::to_time_t(now);
@@ -132,7 +132,7 @@ void Process::execute_print(const std::string& msg) {
     }
 
     //Compose string
-	std::string output = timestamp + " - CORE : " + name + " - " + printMessage;
+    std::string output = "(" + timestamp + ") Core: " + std::to_string(coreId) + " " + printMessage;
     std::cout << output << std::endl;
 	
 	//Append to log file
