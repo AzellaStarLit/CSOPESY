@@ -14,6 +14,10 @@ private:
     std::vector<std::string> log;
     int instructionPointer;
 
+    bool finished = false;
+    int currentCoreId = -1;
+    std::string completionTimeStamp;
+
 public:
 	Process();
 	Process(const std::string& name);
@@ -31,5 +35,16 @@ public:
     int getTotalLines() const;
 
 	~Process() = default; // Default destructor
+
+    bool isFinished() const { return finished; }
+    void setFinished() {
+        finished = true;
+        setCompletionTime();
+    }
+    int getCurrentCore() const { return currentCoreId; }
+    void setCurrentCore(int core) { currentCoreId = core; }
+    std::string getCompletionTimestamp() const { return completionTimeStamp; }
+    std::string getCreationTimestamp() const { return creationTimestamp; }
+    void setCompletionTime();
 };
 

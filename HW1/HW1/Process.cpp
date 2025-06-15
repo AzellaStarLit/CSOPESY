@@ -131,9 +131,13 @@ void Process::execute_print(const std::string& msg, int coreId) {
         printMessage = msg + " from " + name;
     }
 
+    if (coreId != -1) {
+        instructionPointer++;
+    }
+
     //Compose string
     std::string output = "(" + timestamp + ") Core: " + std::to_string(coreId) + " " + printMessage;
-    std::cout << output << std::endl;
+   // std::cout << output << std::endl;
 	
 	//Append to log file
     std::ofstream logFile("logs/" + name + "_log.txt", std::ios::app);
@@ -144,4 +148,12 @@ void Process::execute_print(const std::string& msg, int coreId) {
         std::cerr << "Unable to open log file for writing." << std::endl;
 	}
 
+}
+
+void Process::setCompletionTime() {
+    std::time_t now = std::time(nullptr);
+    std::tm* localTime = std::localtime(&now);
+    std::ostringstream oss;
+    oss << std::put_time(localTime, "%m/%d/%Y, %I:%M:%S %p");
+    completionTimeStamp = oss.str();
 }

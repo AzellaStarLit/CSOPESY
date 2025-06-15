@@ -38,64 +38,121 @@ bool screen_command(const std::string& command) {
 	iss >> screenCmd >> flag >> name;
 
 	if (flag == "-ls") {
-		if (screens.empty()) {
-			std::cout << "No active screens.\n";
+
+		auto allProcesses = processManager.getAllProcesses();
+
+		if (allProcesses.empty()) {
+			std::cout << "No processes available.\n";
+		}
+		else {
+			std::vector<Process*> running, finished;
+
+			for (auto proc : allProcesses) {
+				if (proc->isFinished()) finished.push_back(proc);
+				else running.push_back(proc);
+			}
+
+			std::cout << "RUNNING PROCESSES: \n";
+			if (running.empty()) {
+				std::cout << "No running processes. \n";
+
+			}
+			else
+			{
+				std::cout << std::left << std::setw(20) << "Name"
+					<< std::setw(10) << "Core"
+					<< std::setw(15) << "Progress"
+					<< "Creation Time\n";
+				std::cout << std::string(60, '-') << "\n";
+				for (auto proc : running) {
+					std::cout << std::left << std::setw(20) << proc->getName()
+						<< std::setw(10) << std::to_string(proc->getCurrentCore())
+						<< std::setw(15) << (std::to_string(proc->getCurrentLine()) + " / " + std::to_string(proc->getTotalLines()))
+						<< proc->getCreationTimestamp() << "\n";
+				}
+			}
+			std::cout << "\nFINISHED PROCESSES: \n";
+
+			if (finished.empty()) {
+				std::cout << "No finished processes.\n";
+			}
+			else {
+				std::cout << std::left << std::setw(20) << "Name"
+					<< std::setw(25) << "Creation Time"
+					<< "Completioin Time\n";
+				std::cout << std::string(60, '-') << "\n";
+
+				for (auto proc : finished) {
+					std::cout << std::left << std::setw(20) << proc->getName()
+						<< std::setw(25) << proc->getCreationTimestamp()
+						<< proc->getCompletionTimestamp() << "\n";
+				}
+			}
+
+			std::cout << "\n";
+
+
+
+			/*
+			if (screens.empty()) {
+				std::cout << "No active screens.\n";
+			} else {
+				std::cout << "Active screens:\n";
+				for (const auto& pair : screens) {
+					std::cout << " - " << pair.first << "\n";
+				}
+			}*/
+			return false;
+		}
+
+		if ((flag == "-s" || flag == "-r") && !name.empty()) {
+			if (flag == "-s") {
+				consoleManager.create_screen_with_process(name);
+				return true;
+			}
+			else if (flag == "-r") {
+				consoleManager.resume_screen(name);
+				return true;
+			}
+		}
+		else {
+			std::cout << "\033[31mInvalid screen command. Use: screen -s <name> or screen -r <name>\n\033[0m";
+			return false;
+		}
+	}
+
+	/*
+	void screen_command(const std::string& command) {
+		// Function that encompasses all screen commands
+		std::istringstream iss(command);
+		std::string screenCmd, flag, name;
+		iss >> screenCmd >> flag >> name;
+
+		if ((flag == "-s" || flag == "-r") && !name.empty()) {
+			if (flag == "-s") {
+				if (screens.find(name) == screens.end()) {
+					Process* process = new Process(name);
+					screens[name] = Console(name, process);
+					std::cout << "Screen '" << name << "' created.\n";
+				} else {
+					std::cout << "Screen '" << name << "' already exists. Attaching...\n";
+				}
+				screens[name].draw();
+			} else if (flag == "-r") {
+				auto it = screens.find(name);
+				if (it != screens.end()) {
+					std::cout << "Resuming screen '" << name << "'...\n";
+					it->second.draw(); //Draws the screen when screen -r <name> is initialized
+				} else {
+					std::cout << "No such screen named '" << name << "'.\n";
+				}
+			}
 		} else {
-			std::cout << "Active screens:\n";
-			for (const auto& pair : screens) {
-				std::cout << " - " << pair.first << "\n";
-			}
-		}
-		return true;
-	}
-
-	if ((flag == "-s" || flag == "-r") && !name.empty()) {
-		if (flag == "-s") {
-			consoleManager.create_screen_with_process(name);
-			return true;
-		}
-		else if (flag == "-r") {
-			consoleManager.resume_screen(name);
-			return true;
+			std::cout << "\033[31mInvalid screen command. Use: screen -s <name> or screen -r <name>\n\033[0m";
 		}
 	}
-	else {
-		std::cout << "\033[31mInvalid screen command. Use: screen -s <name> or screen -r <name>\n\033[0m";
-		return false;
-	}
+	*/
 }
-
-/*
-void screen_command(const std::string& command) {
-	// Function that encompasses all screen commands
-	std::istringstream iss(command);
-	std::string screenCmd, flag, name;
-	iss >> screenCmd >> flag >> name;
-
-	if ((flag == "-s" || flag == "-r") && !name.empty()) {
-		if (flag == "-s") {
-			if (screens.find(name) == screens.end()) {
-				Process* process = new Process(name);
-				screens[name] = Console(name, process);
-				std::cout << "Screen '" << name << "' created.\n";
-			} else {
-				std::cout << "Screen '" << name << "' already exists. Attaching...\n";
-			}
-			screens[name].draw();
-		} else if (flag == "-r") {
-			auto it = screens.find(name);
-			if (it != screens.end()) {
-				std::cout << "Resuming screen '" << name << "'...\n";
-				it->second.draw(); //Draws the screen when screen -r <name> is initialized 
-			} else {
-				std::cout << "No such screen named '" << name << "'.\n";
-			}
-		}
-	} else {
-		std::cout << "\033[31mInvalid screen command. Use: screen -s <name> or screen -r <name>\n\033[0m";
-	}
-}
-*/
 
 int main() {
 	
