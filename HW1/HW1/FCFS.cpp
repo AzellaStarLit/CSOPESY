@@ -44,6 +44,12 @@ void FCFS::cpuWorker(int coreId) {
 			jobQueue.pop();
 		}
 
+		//run one process at a time
+		std::unique_lock<std::mutex> execLock(executionLock);
+
+		int assignedCoreId = nextCoreId;
+		nextCoreId = (nextCoreId + 1) % 4; //core 0 to core 3
+
 		//execute the instructions for the process
 		for (int i = 0; i < proc->getTotalLines(); ++i) {
 			proc->execute_print("", coreId);
