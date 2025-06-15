@@ -37,6 +37,18 @@ bool screen_command(const std::string& command) {
 	std::string screenCmd, flag, name;
 	iss >> screenCmd >> flag >> name;
 
+	if (flag == "-ls") {
+		if (screens.empty()) {
+			std::cout << "No active screens.\n";
+		} else {
+			std::cout << "Active screens:\n";
+			for (const auto& pair : screens) {
+				std::cout << " - " << pair.first << "\n";
+			}
+		}
+		return true;
+	}
+
 	if ((flag == "-s" || flag == "-r") && !name.empty()) {
 		if (flag == "-s") {
 			consoleManager.create_screen_with_process(name);
