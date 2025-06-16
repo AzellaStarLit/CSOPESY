@@ -115,10 +115,9 @@ bool screen_command(const std::string& command) {
 				return true;
 			}
 		}
-		else {
-			std::cout << "\033[31mInvalid screen command. Use: screen -s <name> or screen -r <name>\n\033[0m";
-			return false;
-		}
+	} else {
+		std::cout << "\033[31mCommand not recognized. Please try again.\n\033[0m";
+		return false;
 	}
 
 	/*
@@ -152,6 +151,7 @@ bool screen_command(const std::string& command) {
 		}
 	}
 	*/
+	return false;
 }
 
 int main() {
@@ -168,7 +168,7 @@ int main() {
 	};
 
 	// Initialize 10 processes with 10 instructions each
-	scheduler_start();
+	//scheduler_start();
 
 	/*
 	// THIS PART OF THE CODE IS FOR TESTING PURPOSES ONLY
@@ -212,3 +212,5 @@ int main() {
 
 	return 0;
 }
+
+// Manual compilation via terminal: g++ menu_screen.cpp Utilities.cpp Console.cpp ProcessManager.cpp Process.cpp ConsoleManager.cpp FCFS.cpp -o main.exe
