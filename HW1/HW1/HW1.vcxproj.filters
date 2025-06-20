@@ -36,6 +36,12 @@
     <ClCompile Include="FCFS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SchedulerManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ClockManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Console.h">
@@ -57,6 +63,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FCFS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SchedulerManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClockManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -25,6 +25,11 @@ bool ProcessManager::exists(const std::string& name) const {
     return processes.find(name) != processes.end();
 }
 
+int ProcessManager::get_process_count() const {
+    return processes.size();
+}
+
+
 void ProcessManager::generate_instructions(int numProcesses, int instructionsPerProcess, ConsoleManager& consoleManager) {
     for (int i = 0; i < numProcesses; ++i) {
         std::string processName = "process_" + std::to_string(i + 1);
@@ -43,6 +48,7 @@ void ProcessManager::generate_instructions(int numProcesses, int instructionsPer
     std::cout << "\033[32mGenerated " << numProcesses << " processes with "
         << instructionsPerProcess << " instructions each.\033[0m\n";
 }
+
 
 
 

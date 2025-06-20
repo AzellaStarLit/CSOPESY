@@ -120,37 +120,6 @@ bool screen_command(const std::string& command) {
 		return false;
 	}
 
-	/*
-	void screen_command(const std::string& command) {
-		// Function that encompasses all screen commands
-		std::istringstream iss(command);
-		std::string screenCmd, flag, name;
-		iss >> screenCmd >> flag >> name;
-
-		if ((flag == "-s" || flag == "-r") && !name.empty()) {
-			if (flag == "-s") {
-				if (screens.find(name) == screens.end()) {
-					Process* process = new Process(name);
-					screens[name] = Console(name, process);
-					std::cout << "Screen '" << name << "' created.\n";
-				} else {
-					std::cout << "Screen '" << name << "' already exists. Attaching...\n";
-				}
-				screens[name].draw();
-			} else if (flag == "-r") {
-				auto it = screens.find(name);
-				if (it != screens.end()) {
-					std::cout << "Resuming screen '" << name << "'...\n";
-					it->second.draw(); //Draws the screen when screen -r <name> is initialized
-				} else {
-					std::cout << "No such screen named '" << name << "'.\n";
-				}
-			}
-		} else {
-			std::cout << "\033[31mInvalid screen command. Use: screen -s <name> or screen -r <name>\n\033[0m";
-		}
-	}
-	*/
 	return false;
 }
 
