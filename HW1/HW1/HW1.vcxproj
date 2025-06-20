@@ -138,6 +138,7 @@
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="ConsoleManager.cpp" />
     <ClCompile Include="FCFS.cpp" />
+    <ClCompile Include="Instructions.cpp" />
     <ClCompile Include="menu_screen.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessManager.cpp" />
@@ -150,6 +151,7 @@
     <ClInclude Include="ConsoleManager.h" />
     <ClInclude Include="FCFS.h" />
     <ClInclude Include="Header.h" />
+    <ClInclude Include="Instructions.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="ProcessManager.h" />
     <ClInclude Include="SchedulerManager.h" />

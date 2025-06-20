@@ -1,14 +1,18 @@
 #pragma once
-#include "vector"
+#include "SchedulerManager.h"
 #include "ProcessManager.h"
 #include "ConsoleManager.h"
-#include <random>
+#include "Process.h"
+#include "random"
+#include <thread>
+#include <atomic>
 
 class SchedulerManager {
 private:
 	unsigned int minInstructions;
 	unsigned int maxInstructions;
-	bool schedulerRunning = false;
+	std::atomic<bool> schedulerRunning = false;
+	std::thread schedulerThread;
 
 public:
 	SchedulerManager(unsigned int minInst, unsigned int maxInst)
@@ -29,5 +33,6 @@ public:
 
 	void start_scheduler(ProcessManager& processManager, ConsoleManager& consoleManager);
 	void stop_scheduler();
-
+	void run_scheduler(ProcessManager& processManager, ConsoleManager& consoleManager);
+	void generate_instructions(ProcessManager& processManager, ConsoleManager& consoleManager, int numProcesses);
 };

@@ -31,7 +31,6 @@ ProcessManager processManager;
 ConsoleManager consoleManager;
 std::unordered_map<std::string, Console> screens;
 
-
 bool screen_command(const std::string& command) {
 	std::istringstream iss(command);
 	std::string screenCmd, flag, name;
@@ -135,23 +134,6 @@ int main() {
 		{"clear", clear},
 		{"exit", exit_program}
 	};
-
-	// Initialize 10 processes with 10 instructions each
-	//scheduler_start();
-
-	/*
-	// THIS PART OF THE CODE IS FOR TESTING PURPOSES ONLY
-	Process p("TestProcess");
-
-	// Sample instruction to test PRINT instruction
-	std::string instruction = "PRINT(\"This is some random string\")";
-	p.execute_instruction(instruction);
-	std::string instruction2 = "PRINT()";
-	p.execute_instruction(instruction2);
-	//Sample to test logs
-	p.show_log();
-
-	*/
 
 	print_header();
 
