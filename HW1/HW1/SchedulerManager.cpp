@@ -69,7 +69,7 @@ void SchedulerManager::generate_instructions(ProcessManager& processManager, Con
 	std::random_device rd;
 	std::mt19937 gen(rd());
 
-	const Instructions& instruction = instruction[0]; // only PRINT for now
+	const Instructions& instructionSet = instructionTemplates[0]; // only PRINT for now
 
 	for (int i = 0; i < numProcesses; ++i) {
 		std::string processName = "process_" + std::to_string(i + 1);
@@ -80,7 +80,7 @@ void SchedulerManager::generate_instructions(ProcessManager& processManager, Con
 		std::uniform_int_distribution<> dis(minInstructions, maxInstructions);
 		int instructionCount = dis(gen);
 
-		processManager.create_process(processName, instructionCount);  
+		processManager.create_process(processName);  
 		consoleManager.attach_screen(processName, &process);
 	}
 

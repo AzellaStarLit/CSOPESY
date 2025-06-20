@@ -10,4 +10,4 @@ struct Instructions {
 	std::vector<std::string> operands;
 };
 
-extern const std::unordered_map<std::string, Instructions> instructionSet;
+extern const std::vector<Instructions> instructionTemplates;

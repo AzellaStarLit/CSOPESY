@@ -1,6 +1,6 @@
 #include "Instructions.h"
 
-static const std::vector<Instructions> instructionTemplates = {
+const std::vector<Instructions> instructionTemplates = {
     { "PRINT",    "PRINT(\"Hello world from {name}!\")", {} },
     /*
     { "DECLARE",  "DECLARE({var}, {value})", {"var", "value"} },
