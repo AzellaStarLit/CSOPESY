@@ -1,23 +1,24 @@
 #pragma once
 
 #include <unordered_map>
-#include <string>
+#include <vector>
+
 #include "Process.h"
-#include "ConsoleManager.h"
 
 class ConsoleManager;
+
 class ProcessManager {
 private:
-    std::unordered_map<std::string, Process> processes;
 
-    std::vector<Process*> allProcesses;
+    //this is a list of all the processes [name, process]
+    std::unordered_map<std::string, Process> processes;
 
 public:
     void create_process(const std::string& name);
+
     Process* get_process(const std::string& name);
     bool exists(const std::string& name) const;
-    void generate_instructions(int numProcesses, int instructionsPerProcess, ConsoleManager& consoleManager);
+    std::vector<Process*> getAllProcesses() const;
 
-    const std::vector<Process*>& getAllProcesses() const { return allProcesses; }
-    void addToAllProcesses(Process* process) { allProcesses.push_back(process); }
+    void generate_processes(int numProcesses, int instructionsPerProcess, ConsoleManager& consoleManager);
 };

@@ -31,6 +31,7 @@ void initialize() {
 	std::cout << "initialize command recognized. Doing something.\n";
 }
 
+/*
 void scheduler_start() {
 	std::cout << "Starting scheduler and generating processes...\n";
 
@@ -51,12 +52,14 @@ void scheduler_start() {
 
 	processManager.generate_instructions(10, 100, consoleManager);
 }
+*/
 
+/*
 void scheduler_stop() {
 	// Stop the scheduler here
 	//std::cout << "scheduler_stop command recognized. Doing something.\n";
 	scheduler.stop();
-}
+}*/
 
 void report_util() {
 	// Report the utilization of the system here
@@ -71,6 +74,6 @@ void clear() {
 
 void exit_program() {
 	// Exit the screen here
-	scheduler_stop();
+	//scheduler_stop();
 	std::exit(0);
 }

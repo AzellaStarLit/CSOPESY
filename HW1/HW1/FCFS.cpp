@@ -1,3 +1,4 @@
+/*
 #include "FCFS.h"
 
 void FCFS::addProcess(Process* process) {
@@ -59,7 +60,7 @@ void FCFS::cpuWorker(int coreId) {
 			proc->execute_print("", coreId);
 			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}*/
-
+/*
 		while (proc->getCurrentLine() < proc->getTotalLines()) {
 			if (stopScheduler) break;
 			proc->execute_print("", coreId);
@@ -79,4 +80,4 @@ void FCFS::assignToCore(Process* p, int coreId) {
 void FCFS::releaseCore(int coreId) {
 	std::lock_guard<std::mutex> lock(executionLock);
 	coreAssignments[coreId] = nullptr;
-}
+}*/
