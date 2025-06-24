@@ -82,16 +82,6 @@ int Process::getTotalLines() const {
     return totalLines;
 }
 
-/*
-void Process::generate_instructions() {
-    int count = 10;
-
-    for (int i = 0; i < count; ++i) {
-        add_instruction("print: Hello World! from " + name + " [Line " + std::to_string(i + 1) + "]");
-		totalLines = instructions.size();
-    }
-}
-*/
 
 void Process::load_instructions(const std::vector<std::string>& instrs) {
     // Clear existing instructions if needed

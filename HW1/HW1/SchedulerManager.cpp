@@ -96,8 +96,10 @@ void SchedulerManager::run_scheduler(ProcessManager& processManager, ConsoleMana
 				process->load_instructions(instructions);
 				consoleManager.attach_screen(processName, process);
 
+				/*
 				std::cout << "\033[36mGenerated process: " << processName
 					<< " with " << numInstructions << " instructions.\033[0m" << std::endl;
+				*/
 			}
 		}
 

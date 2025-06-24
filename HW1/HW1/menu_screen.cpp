@@ -75,6 +75,7 @@ bool screen_command(const std::string& command, SchedulerManager& schedulerManag
 				consoleManager.attach_screen(name, proc);
 
 				std::cout << "\033[32mGenerated " << instructions.size() << " instructions for process '" << name << "'.\033[0m\n";
+				consoleManager.resume_screen(name);
 			}
 
 			return true;
@@ -149,19 +150,6 @@ bool screen_command(const std::string& command, SchedulerManager& schedulerManag
 }
 
 int main() {
-
-	// THIS PART OF THE CODE IS FOR TESTING PURPOSES ONLY
-	/*
-	Process p("TestProcess");
-
-	// Sample instruction to test PRINT instruction
-	std::string instruction = "PRINT(\"This is some random string\")";
-	p.execute_instruction(instruction);
-	std::string instruction2 = "PRINT()";
-	p.execute_instruction(instruction2);
-	//Sample to test logs
-	p.show_log();
-	*/
 
 	std::string command;
 	std::unordered_map<std::string, void(*)()> commandMap = {

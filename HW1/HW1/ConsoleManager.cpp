@@ -21,7 +21,6 @@ void ConsoleManager::attach_screen(const std::string& name, Process* process) {
         processes[name] = *process; 
         screens[name] = Console(name, &processes[name]); 
         std::cout << "Screen + Process '" << name << "\n";
-		screens[name].draw();
     }
     else {
         std::cout << "Screen '" << name << "' already exists. Attaching...\n";
