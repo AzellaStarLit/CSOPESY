@@ -49,6 +49,59 @@ void SchedulerManager::run_scheduler(ProcessManager& processManager, ConsoleMana
 	std::uniform_int_distribution<> dis(minInstructions, maxInstructions);
 
 	while (schedulerRunning) {
+		std::ostringstream nameStream;
+		nameStream << "process_" << std::setw(2) << std::setfill('0') << processCounter++;
+		std::string processName = nameStream.str();
+
+		{
+			std::scoped_lock lock(processManager.getMutex(), consoleManager.getMutex());
+
+			processManager.create_process(processName);
+			Process* process = processManager.get_process(processName);
+
+			if (process) {
+				int numInstructions = dis(gen);
+				std::vector<std::string> instructions;
+				for (int i = 0; i < numInstructions; ++i) {
+					instructions.push_back(generate_rand_instruction());
+				}
+
+				process->load_instructions(instructions);
+				consoleManager.attach_screen(processName, process);
+
+				std::cout << "\033[36mGenerated process: " << processName
+					<< " with " << numInstructions << " instructions.\033[0m" << std::endl;
+			}
+		}
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(generationIntervalMs));
+	}
+}
+
+
+std::string SchedulerManager::generate_rand_instruction(){
+
+	static const std::string instructions[] = {
+		"PRINT(\"\")",
+		"PRINT(\"Processing...\")",
+		"PRINT(\"We love CSOPESY <3\")",
+	};
+
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	static std::uniform_int_distribution<> dis(0, sizeof(instructions)/sizeof(instructions[0]) - 1);
+
+	return instructions[dis(gen)];
+}
+
+
+/*
+void SchedulerManager::run_scheduler(ProcessManager& processManager, ConsoleManager& consoleManager) {
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(minInstructions, maxInstructions);
+
+	while (schedulerRunning) {
 		// Generate name like p01, p02...
 		std::ostringstream nameStream;
 		nameStream << "process_" << std::setw(2) << std::setfill('0') << processCounter++;
@@ -66,13 +119,14 @@ void SchedulerManager::run_scheduler(ProcessManager& processManager, ConsoleMana
 			consoleManager.attach_screen(processName, process);
 
 			std::cout << "\033[36mGenerated process: " << processName << "\033[0m" << std::endl;
+			processManager.generate_instructions(processName, consoleManager);
 		}
 
 		// Sleep between generations
 		std::this_thread::sleep_for(std::chrono::milliseconds(generationIntervalMs));
 	}
 }
-
+*/
 
 /*
 #include "SchedulerManager.h"

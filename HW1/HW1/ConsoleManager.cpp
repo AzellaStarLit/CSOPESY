@@ -1,7 +1,9 @@
 #include "ConsoleManager.h"
 #include <iostream>
+#include <mutex>
 
 void ConsoleManager::create_screen_with_process(const std::string& name) {
+    //std::lock_guard<std::mutex> lock(screenMutex);
     if (screens.find(name) == screens.end()) {
         processes[name] = Process(name);
         screens[name] = Console(name, &processes[name]);
@@ -14,6 +16,7 @@ void ConsoleManager::create_screen_with_process(const std::string& name) {
 }
 
 void ConsoleManager::attach_screen(const std::string& name, Process* process) {
+    //std::lock_guard<std::mutex> lock(screenMutex);
     if (screens.find(name) == screens.end()) {
         processes[name] = *process; 
         screens[name] = Console(name, &processes[name]); 
@@ -26,6 +29,7 @@ void ConsoleManager::attach_screen(const std::string& name, Process* process) {
 
 
 void ConsoleManager::resume_screen(const std::string& name) {
+    //std::lock_guard<std::mutex> lock(screenMutex);
     auto it = screens.find(name);
     if (it != screens.end()) {
         std::cout << "Resuming screen '" << name << "'...\n";
@@ -34,4 +38,8 @@ void ConsoleManager::resume_screen(const std::string& name) {
     else {
         std::cout << "No such screen named '" << name << "'.\n";
     }
+}
+
+std::mutex& ConsoleManager::getMutex() { 
+    return screenMutex; 
 }

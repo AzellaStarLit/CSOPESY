@@ -12,7 +12,7 @@ private:
     std::string creationTimestamp;
     std::vector<std::string> instructions;
     std::vector<std::string> log;
-    int instructionPointer;
+    uint32_t instructionPointer;
 
     bool finished = false;
     int currentCoreId = -1;
@@ -26,7 +26,8 @@ public:
     void show_log() const;
     void setTimestamp();
     void add_instruction(const std::string& instr);
-    void generate_instructions();
+    //void generate_instructions();
+    void load_instructions(const std::vector<std::string>& instrs);
 	void execute_instruction(const std::string& instruction, int coreId);
 	void execute_print(const std::string& msg, int coreId);
     std::string getName() const;

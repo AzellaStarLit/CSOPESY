@@ -135,6 +135,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ClockManager.cpp" />
+    <ClCompile Include="ConfigManager.cpp" />
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="ConsoleManager.cpp" />
     <ClCompile Include="FCFS.cpp" />
@@ -147,6 +148,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ClockManager.h" />
+    <ClInclude Include="ConfigManager.h" />
     <ClInclude Include="Console.h" />
     <ClInclude Include="ConsoleManager.h" />
     <ClInclude Include="FCFS.h" />

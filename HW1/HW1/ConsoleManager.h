@@ -6,9 +6,11 @@
 #include <string>
 #include "Console.h"
 #include "Process.h"
+#include <mutex>
 
 class ConsoleManager {
 private:
+    mutable std::mutex screenMutex;
     std::unordered_map<std::string, Console> screens;
     std::unordered_map<std::string, Process> processes;
 
@@ -16,4 +18,5 @@ public:
     void create_screen_with_process(const std::string& name);
     void resume_screen(const std::string& name);
     void attach_screen(const std::string& name, Process* process);
+    std::mutex& getMutex();
 };

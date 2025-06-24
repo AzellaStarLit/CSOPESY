@@ -2,6 +2,7 @@
 
 #include <thread>
 #include <atomic>
+#include <mutex>
 
 class ProcessManager;
 class ConsoleManager;
@@ -21,4 +22,5 @@ public:
 	void start_scheduler(ProcessManager& processManager, ConsoleManager& consoleManager);
 	void stop_scheduler();
 	void run_scheduler(ProcessManager& processManager, ConsoleManager& consoleManager);
+	std::string generate_rand_instruction();
 };
