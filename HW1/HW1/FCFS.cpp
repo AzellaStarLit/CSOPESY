@@ -1,83 +1,76 @@
-/*
 #include "FCFS.h"
 
-void FCFS::addProcess(Process* process) {
-	std::lock_guard<std::mutex> lock(mtx);
+#include <iostream>
+#include <chrono>
+#include <thread>
 
-	jobQueue.push(process); //add process to queue
-	cv.notify_one(); //notify that there is a new process in the queue
-}
+//constructor
+FCFSScheduler::FCFSScheduler(int cores) : Scheduler(cores){}
 
-void FCFS::start() {
-	for (int i = 0; i < 4; i++) {
-		cpuThreads.emplace_back(&FCFS::cpuWorker, this, i);
+//start the algorithm
+void FCFSScheduler::start() {
+	isRunning = true;
+
+	for (int i = 0; i < numCores; i++) {
+		workers.emplace_back(&FCFSScheduler::worker_loop, this, i);
 	}
 }
 
-//stop the scheduler and join the threads
-void FCFS::stop() {
-	{
-		std::lock_guard<std::mutex> lock(mtx);
-		stopScheduler = true;
-	}
-
-	cv.notify_all(); 
-	for (auto& thread : cpuThreads) {
-		if (thread.joinable()) thread.join();
-	}
-}
-
-void FCFS::cpuWorker(int coreId) {
-	while (true)
-	{
-		Process* proc = nullptr;
+//1 core = 1 process to run
+void FCFSScheduler::worker_loop(int coreId) {
+	while (isRunning) {
+		Process* process = nullptr;
 
 		{
-			std::unique_lock<std::mutex> lock(mtx);
-			cv.wait(lock, [&] {
-				return stopScheduler || !jobQueue.empty();
-				});
+			std::unique_lock<std::mutex> lock(queueMutex);
+			cv.wait(lock, [&]() {return !readyQueue.empty() || !isRunning; });
 
-			if (stopScheduler && jobQueue.empty()) return;
+			if (!isRunning && readyQueue.empty()) return;
 
-			//get the first in the queue [FCFS]
-			proc = jobQueue.front();
-			jobQueue.pop();
-			assignToCore(proc, coreId);
+			process = readyQueue.front();
+			readyQueue.pop();
 		}
 
-		
+		if (process) {
+			process->setCurrentCore(coreId); //set the current core executing this process
 
-		//run one process at a time
-		//std::unique_lock<std::mutex> execLock(executionLock);
+			while (!process->isFinished()) {
+				std::string instruction = process->getCurrentInstruction(); //get the corresponding instruction
+				process->execute_instruction(instruction, coreId); //execute the instruction
+				std::this_thread::sleep_for(std::chrono::milliseconds(100)); //wait
 
-		//int assignedCoreId = nextCoreId;
-		//nextCoreId = (nextCoreId + 1) % 4; //core 0 to core 3
-
-		//execute the instructions for the process
-		/*
-		for (int i = 0; i < proc->getTotalLines(); ++i) {
-			proc->execute_print("", coreId);
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		}*/
-/*
-		while (proc->getCurrentLine() < proc->getTotalLines()) {
-			if (stopScheduler) break;
-			proc->execute_print("", coreId);
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+				//mark the process as finished when all of the instructions are finished executing
+				if (process->getCurrentLine() >= process->getTotalLines()) {
+					process->markFinished();
+				}
+			}
 		}
-		releaseCore(coreId);
-		proc->setFinished();
 	}
 }
 
-void FCFS::assignToCore(Process* p, int coreId) {
-	std::lock_guard<std::mutex> lock(executionLock);
-	coreAssignments[coreId] = p;
-	p->setCurrentCore(coreId);
+Process* FCFSScheduler::get_next_process() {
+	if (!readyQueue.empty()) {
+		Process* p = readyQueue.front();
+		readyQueue.pop();
+		return p;
+	}
+
+	return nullptr;
 }
 
-void FCFS::releaseCore(int coreId) {
-	std::lock_guard<std::mutex> lock(executionLock);
-	coreAssignments[coreId] = nullptr;
-}*/
+void FCFSScheduler::stop() {
+	isRunning = false;
+	cv.notify_all();
+
+	//join all worker threads
+	for (auto& worker : workers) {
+		if (worker.joinable()) {
+			worker.join();
+		}
+	}
+
+	//clear the worker list
+	workers.clear();
+
+	std::cout << "All worker threads joined.\n";
+}

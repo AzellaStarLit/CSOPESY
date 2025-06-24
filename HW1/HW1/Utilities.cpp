@@ -9,9 +9,6 @@
 extern ProcessManager processManager;
 extern ConsoleManager consoleManager;
 
-static FCFS scheduler;
-
-
 void print_header() {
 	// Prints the OS Main Menu
 	std::cout << " ::::::::   ::::::::   ::::::::  :::::::::  :::::::::: ::::::::  :::   :::\n";
@@ -30,36 +27,6 @@ void initialize() {
 	// Initialize any necessary variables or settings here
 	std::cout << "initialize command recognized. Doing something.\n";
 }
-
-/*
-void scheduler_start() {
-	std::cout << "Starting scheduler and generating processes...\n";
-
-	for(int i = 1; i <= 10; i++){
-		std::string name = "process_" + std::to_string(i);
-		Process* proc = new Process(name, 100);
-
-		for (int j = 0; j < 100; ++j) {
-			proc->add_instruction("");
-		}
-
-		scheduler.addProcess(proc);
-		processManager.addToAllProcesses(proc);
-	}
-
-	scheduler.start();
-
-
-	processManager.generate_instructions(10, 100, consoleManager);
-}
-*/
-
-/*
-void scheduler_stop() {
-	// Stop the scheduler here
-	//std::cout << "scheduler_stop command recognized. Doing something.\n";
-	scheduler.stop();
-}*/
 
 void report_util() {
 	// Report the utilization of the system here
