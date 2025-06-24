@@ -22,11 +22,14 @@ This is where the program loop will be running unless the user exits.
 #include "ProcessManager.h"
 #include "ConsoleManager.h"
 #include "FCFS.h"
+#include "RR.h"
 #include "SchedulerController.h"
 
 
 ProcessManager processManager;
 ConsoleManager consoleManager;
+
+std::unique_ptr<Scheduler> scheduler; 
 
 // Global functions for initialization
 void print_header();
@@ -134,14 +137,26 @@ bool screen_command(const std::string& command) {
 
 	int main() {
 
-		int cores = 4; //TODO: CORES WILL BE READ FROM COFIG FILE
+		//TODO: THESE WILL BE READ FROM COFIG FILE
+		int cores = 4; 
+		std::string algo = "RR";
+		int quantum = 2; 
 
-		fcfs = std::make_unique<FCFSScheduler>(cores);
+		if (algo == "FCFS") {
+			scheduler = std::make_unique<FCFSScheduler>(cores);
+		}
+		else if (algo == "RR") {
+			scheduler = std::make_unique<RRScheduler>(cores, quantum); 
+		}
+		else {
+			std::cerr << "Unknown algorithm\n";
+			return 1; 
+		}
 
 		//get the processes in process manager then load it to the ready queue
 		auto all = processManager.getAllProcesses();
 		for (auto* p : all) {
-			fcfs->add_process(p);
+			scheduler->add_process(p);
 		}
 
 		//this is a list of commands recognized by the OS emulator
@@ -168,11 +183,11 @@ bool screen_command(const std::string& command) {
 
 			Process* p = processManager.get_process(name);
 
-			fcfs->add_process(p);                           // add to ready queue
+			scheduler->add_process(p);                           // add to ready queue
 			consoleManager.attach_screen(name, p);          // create screen for the process
 		}
 
-		fcfs->start();
+		scheduler->start();
 
 		while (true) {
 
