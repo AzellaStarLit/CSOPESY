@@ -105,19 +105,20 @@ bool screen_command(const std::string& command) {
 			return false;
 		}
 
-		if ((flag == "-s" || flag == "-r") && !name.empty()) {
-			if (flag == "-s") {
-				consoleManager.create_screen_with_process(name);
-				return true;
-			}
-			else if (flag == "-r") {
-				consoleManager.resume_screen(name);
-				return true;
-			}
-		}
 	} else {
-		std::cout << "\033[31mCommand not recognized. Please try again.\n\033[0m";
+		std::cout << "\033[31mInvalid screen command. Use: screen -s <name> or screen -r <name>\n\033[0m";
 		return false;
+	}
+
+	if ((flag == "-s" || flag == "-r") && !name.empty()) {
+		if (flag == "-s") {
+			consoleManager.create_screen_with_process(name);
+			return true;
+		}
+		else if (flag == "-r") {
+			consoleManager.resume_screen(name);
+			return true;
+		}
 	}
 
 	/*
