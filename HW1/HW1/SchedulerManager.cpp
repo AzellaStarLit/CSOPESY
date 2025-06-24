@@ -1,3 +1,80 @@
+
+#include "SchedulerManager.h"
+#include "ProcessManager.h"
+#include "ConsoleManager.h"
+#include "Process.h"
+#include "Instructions.h"
+#include <random>
+#include <thread>
+#include <atomic>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
+
+SchedulerManager::SchedulerManager(unsigned int minInst, unsigned int maxInst, int interval)
+	: minInstructions(minInst), maxInstructions(maxInst), generationIntervalMs(interval) {
+	schedulerRunning = false;
+	processCounter = 1;
+}
+
+void SchedulerManager::start_scheduler(ProcessManager& processManager, ConsoleManager& consoleManager) {
+	if (schedulerRunning) {
+		std::cout << "\033[33mScheduler is already running.\033[0m" << std::endl;
+		return;
+	}
+
+	schedulerRunning = true;
+	schedulerThread = std::thread(&SchedulerManager::run_scheduler, this, std::ref(processManager), std::ref(consoleManager));
+	std::cout << "\033[32mScheduler started.\033[0m" << std::endl;
+}
+
+void SchedulerManager::stop_scheduler() {
+	if (!schedulerRunning) {
+		std::cout << "\033[33mScheduler is not running.\033[0m" << std::endl;
+		return;
+	}
+
+	schedulerRunning = false;
+
+	if (schedulerThread.joinable()) {
+		schedulerThread.join();
+	}
+
+	std::cout << "\033[32mScheduler stopped.\033[0m" << std::endl;
+}
+
+void SchedulerManager::run_scheduler(ProcessManager& processManager, ConsoleManager& consoleManager) {
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(minInstructions, maxInstructions);
+
+	while (schedulerRunning) {
+		// Generate name like p01, p02...
+		std::ostringstream nameStream;
+		nameStream << "process_" << std::setw(2) << std::setfill('0') << processCounter++;
+		std::string processName = nameStream.str();
+
+		// Create process
+		processManager.create_process(processName);
+		Process* process = processManager.get_process(processName);
+
+		if (!process) {
+			std::cout << "\033[31mFailed to create process: " << processName << "\033[0m" << std::endl;
+		}
+		else {
+			// Attach to console
+			consoleManager.attach_screen(processName, process);
+
+			std::cout << "\033[36mGenerated process: " << processName << "\033[0m" << std::endl;
+		}
+
+		// Sleep between generations
+		std::this_thread::sleep_for(std::chrono::milliseconds(generationIntervalMs));
+	}
+}
+
+
+/*
 #include "SchedulerManager.h"
 #include "ProcessManager.h"
 #include "ConsoleManager.h"
@@ -50,15 +127,6 @@ void SchedulerManager::run_scheduler(ProcessManager& processManager, ConsoleMana
 			continue;
 		}
 
-		/*
-		else {
-			for (int i = 0; i < instructionCount; ++i) {
-				const Instructions& instruction = Instructions::generate_instructions();
-				std::string instructionString = 
-			}
-		}
-		*/
-
 		consoleManager.attach_screen(processName, process);
 	}
 
@@ -88,4 +156,4 @@ void SchedulerManager::generate_instructions(ProcessManager& processManager, Con
 		<< " processes with random PRINT instructions.\033[0m\n";
 }
 
-
+*/

@@ -16,6 +16,7 @@ LABARRETE, Lance Desmond
 #include "Utilities.h"
 #include "Console.h"
 #include "ProcessManager.h"
+#include "SchedulerManager.h"
 
 
 // Global functions for initialization
@@ -30,6 +31,7 @@ void exit_program();
 ProcessManager processManager;
 ConsoleManager consoleManager;
 std::unordered_map<std::string, Console> screens;
+SchedulerManager schedulerManager(5, 10, 1000); // minInst, maxInst, intervalMs
 
 bool screen_command(const std::string& command) {
 	std::istringstream iss(command);

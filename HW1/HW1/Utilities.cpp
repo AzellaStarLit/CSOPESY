@@ -1,6 +1,7 @@
 #include "Utilities.h"
 #include "ProcessManager.h"
 #include "FCFS.h"
+#include "SchedulerManager.h"
 
 #include <iostream>
 #include <cstdlib>
@@ -8,6 +9,7 @@
 
 extern ProcessManager processManager;
 extern ConsoleManager consoleManager;
+extern SchedulerManager schedulerManager;
 
 static FCFS scheduler;
 
@@ -31,6 +33,7 @@ void initialize() {
 	std::cout << "initialize command recognized. Doing something.\n";
 }
 
+/*
 void scheduler_start() {
 	std::cout << "Starting scheduler and generating processes...\n";
 
@@ -51,12 +54,23 @@ void scheduler_start() {
 
 	processManager.generate_instructions(10, 100, consoleManager);
 }
+*/
 
+void scheduler_start() {
+	schedulerManager.start_scheduler(processManager, consoleManager);
+}
+
+void scheduler_stop() {
+	schedulerManager.stop_scheduler();
+}
+
+/*
 void scheduler_stop() {
 	// Stop the scheduler here
 	//std::cout << "scheduler_stop command recognized. Doing something.\n";
 	scheduler.stop();
 }
+*/
 
 void report_util() {
 	// Report the utilization of the system here
