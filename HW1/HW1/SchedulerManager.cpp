@@ -4,6 +4,7 @@
 #include "ConsoleManager.h"
 #include "Process.h"
 #include "Instructions.h"
+
 #include <random>
 #include <thread>
 #include <atomic>
@@ -11,12 +12,33 @@
 #include <iomanip>
 #include <sstream>
 
+
+// Constants for validation
+constexpr uint32_t MIN_INS_LOWER_BOUND = 1;
+constexpr uint32_t MIN_INS_UPPER_BOUND = std::numeric_limits<uint32_t>::max();
+
+constexpr uint32_t MAX_INS_LOWER_BOUND = 1;
+constexpr uint32_t MAX_INS_UPPER_BOUND = std::numeric_limits<uint32_t>::max();
+
+constexpr int GENERATION_INTERVAL_MIN = 0;
+constexpr int GENERATION_INTERVAL_MAX = std::numeric_limits<int>::max();
+
+
+//CONSTRUCTORS
+SchedulerManager::SchedulerManager()
+	: minInstructions(1), maxInstructions(1), generationIntervalMs(1000) {
+	schedulerRunning = false;
+	processCounter = 1;
+}
+
 SchedulerManager::SchedulerManager(unsigned int minInst, unsigned int maxInst, int interval)
 	: minInstructions(minInst), maxInstructions(maxInst), generationIntervalMs(interval) {
 	schedulerRunning = false;
 	processCounter = 1;
 }
 
+
+//FUNCTIONS
 void SchedulerManager::start_scheduler(ProcessManager& processManager, ConsoleManager& consoleManager) {
 	if (schedulerRunning) {
 		std::cout << "\033[33mScheduler is already running.\033[0m" << std::endl;
@@ -46,11 +68,16 @@ void SchedulerManager::stop_scheduler() {
 void SchedulerManager::run_scheduler(ProcessManager& processManager, ConsoleManager& consoleManager) {
 	std::random_device rd;
 	std::mt19937 gen(rd());
+
+	//TODO: READ minInstructions and maxInstructions from config file
+	const uint32_t minInstructions = 50;     
+	const uint32_t maxInstructions = 10000; 
+
 	std::uniform_int_distribution<> dis(minInstructions, maxInstructions);
 
 	while (schedulerRunning) {
 		std::ostringstream nameStream;
-		nameStream << "process_" << std::setw(2) << std::setfill('0') << processCounter++;
+		nameStream << "process_" << processCounter++;
 		std::string processName = nameStream.str();
 
 		{
@@ -63,7 +90,7 @@ void SchedulerManager::run_scheduler(ProcessManager& processManager, ConsoleMana
 				int numInstructions = dis(gen);
 				std::vector<std::string> instructions;
 				for (int i = 0; i < numInstructions; ++i) {
-					instructions.push_back(generate_rand_instruction());
+					instructions.push_back(generate_rand_instruction(processName));
 				}
 
 				process->load_instructions(instructions);
@@ -79,12 +106,12 @@ void SchedulerManager::run_scheduler(ProcessManager& processManager, ConsoleMana
 }
 
 
-std::string SchedulerManager::generate_rand_instruction(){
+std::string SchedulerManager::generate_rand_instruction(const std::string& processName){
 
 	static const std::string instructions[] = {
-		"PRINT(\"\")",
-		"PRINT(\"Processing...\")",
-		"PRINT(\"We love CSOPESY <3\")",
+		"PRINT(\"Hello world from " + processName + "!\")",
+		//"PRINT(\"Processing...\")",
+		//"PRINT(\"We love CSOPESY <3\")",
 	};
 
 	static std::random_device rd;
@@ -95,119 +122,54 @@ std::string SchedulerManager::generate_rand_instruction(){
 }
 
 
-/*
-void SchedulerManager::run_scheduler(ProcessManager& processManager, ConsoleManager& consoleManager) {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis(minInstructions, maxInstructions);
-
-	while (schedulerRunning) {
-		// Generate name like p01, p02...
-		std::ostringstream nameStream;
-		nameStream << "process_" << std::setw(2) << std::setfill('0') << processCounter++;
-		std::string processName = nameStream.str();
-
-		// Create process
-		processManager.create_process(processName);
-		Process* process = processManager.get_process(processName);
-
-		if (!process) {
-			std::cout << "\033[31mFailed to create process: " << processName << "\033[0m" << std::endl;
-		}
-		else {
-			// Attach to console
-			consoleManager.attach_screen(processName, process);
-
-			std::cout << "\033[36mGenerated process: " << processName << "\033[0m" << std::endl;
-			processManager.generate_instructions(processName, consoleManager);
-		}
-
-		// Sleep between generations
-		std::this_thread::sleep_for(std::chrono::milliseconds(generationIntervalMs));
-	}
-}
-*/
-
-/*
-#include "SchedulerManager.h"
-#include "ProcessManager.h"
-#include "ConsoleManager.h"
-#include "Process.h"
-#include "Instructions.h"
-#include "random"
-#include <thread>
-#include <atomic>
-
-
-void SchedulerManager::start_scheduler(ProcessManager& processManager, ConsoleManager& consoleManager) {
-	if(schedulerRunning) {
-		std::cout << "\033[33mScheduler is already running.\033[0m" << std::endl;
-		return;
-	}
-
-	schedulerRunning = true;
-	schedulerThread = std::thread(&SchedulerManager::run_scheduler, this, std::ref(processManager), std::ref(consoleManager));
-	std::cout << "\033[32mScheduler started.\033[0m" << std::endl;
-	
+//GETTERS
+uint32_t SchedulerManager::getMinInstructions() const {
+	return minInstructions;
 }
 
-void SchedulerManager::stop_scheduler() {
-	if(!schedulerRunning) {
-		std::cout << "\033[33mScheduler is not running.\033[0m" << std::endl;
-		return;
-	}
-
-	schedulerRunning = false;
-	std::cout << "\033[32mScheduler stopped.\033[0m" << std::endl;
+uint32_t SchedulerManager::getMaxInstructions() const {
+	return maxInstructions;
 }
 
-void SchedulerManager::run_scheduler(ProcessManager& processManager, ConsoleManager& consoleManager) {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> dis(minInstructions, maxInstructions);
-
-	// Generate processes with random instruction counts
-
-	while (schedulerRunning) {
-
-		std::string processName = "Process_" + std::to_string(processManager.get_process_count() + 1);
-		int instructionCount = dis(gen);
-
-		processManager.create_process(processName);
-		Process* process = processManager.get_process(processName);
-
-		if (!process) {
-			std::cout << "\033[31mFailed to create process: " << processName << "\033[0m" << std::endl;
-			continue;
-		}
-
-		consoleManager.attach_screen(processName, process);
-	}
-
-	std::cout << "\033[34mGenerating processes...\033[0m" << std::endl;
+int SchedulerManager::getGenerationIntervalMs() const {
+	return generationIntervalMs;
 }
 
-void SchedulerManager::generate_instructions(ProcessManager& processManager, ConsoleManager& consoleManager, int numProcesses) {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-
-	const Instructions& instructionSet = instructionTemplates[0]; // only PRINT for now
-
-	for (int i = 0; i < numProcesses; ++i) {
-		std::string processName = "process_" + std::to_string(i + 1);
-		Process process(processName);
-
-		std::cout << "Generating instructions for " << processName << "...\n";
-
-		std::uniform_int_distribution<> dis(minInstructions, maxInstructions);
-		int instructionCount = dis(gen);
-
-		processManager.create_process(processName);  
-		consoleManager.attach_screen(processName, &process);
+//SETTERS
+bool SchedulerManager::setMinInstructions(uint32_t minIns) {
+	if (minIns < MIN_INS_LOWER_BOUND || minIns > MIN_INS_UPPER_BOUND) {
+		std::cerr << "Invalid minInstructions: " << minIns << ". Must be between "
+			<< MIN_INS_LOWER_BOUND << " and " << MIN_INS_UPPER_BOUND << ".\n";
+		return false;
 	}
+	minInstructions = minIns;
 
-	std::cout << "\033[32mGenerated " << numProcesses
-		<< " processes with random PRINT instructions.\033[0m\n";
+	if (maxInstructions < minInstructions) {
+		maxInstructions = minInstructions;
+	}
+	return true;
 }
 
-*/
+bool SchedulerManager::setMaxInstructions(uint32_t maxIns) {
+	if (maxIns < MAX_INS_LOWER_BOUND || maxIns > MAX_INS_UPPER_BOUND) {
+		std::cerr << "Invalid maxInstructions: " << maxIns << ". Must be between "
+			<< MAX_INS_LOWER_BOUND << " and " << MAX_INS_UPPER_BOUND << ".\n";
+		return false;
+	}
+	maxInstructions = maxIns;
+
+	if (minInstructions > maxInstructions) {
+		minInstructions = maxInstructions;
+	}
+	return true;
+}
+
+bool SchedulerManager::setGenerationIntervalMs(int intervalMs) {
+	if (intervalMs < GENERATION_INTERVAL_MIN || intervalMs > GENERATION_INTERVAL_MAX) {
+		std::cerr << "Invalid generationIntervalMs: " << intervalMs << ". Must be between "
+			<< GENERATION_INTERVAL_MIN << " and " << GENERATION_INTERVAL_MAX << ".\n";
+		return false;
+	}
+	generationIntervalMs = intervalMs;
+	return true;
+}

@@ -17,6 +17,7 @@ LABARRETE, Lance Desmond
 #include "Console.h"
 #include "ProcessManager.h"
 #include "SchedulerManager.h"
+#include <random>
 
 
 // Global functions for initialization
@@ -30,17 +31,52 @@ void exit_program();
 
 ProcessManager processManager;
 ConsoleManager consoleManager;
+SchedulerManager schedulerManager;
 std::unordered_map<std::string, Console> screens;
-SchedulerManager schedulerManager(5, 10, 1000); // minInst, maxInst, intervalMs
 
-bool screen_command(const std::string& command) {
+
+bool screen_command(const std::string& command, SchedulerManager& schedulerManager) {
+	std::mutex processConsoleMutex;
+
 	std::istringstream iss(command);
 	std::string screenCmd, flag, name;
 	iss >> screenCmd >> flag >> name;
 
 	if ((flag == "-s" || flag == "-r") && !name.empty()) {
 		if (flag == "-s") {
-			consoleManager.create_screen_with_process(name);
+			std::lock_guard<std::mutex> lock(processConsoleMutex);
+
+			Process* proc = processManager.get_process(name);
+			if (!proc) {
+				processManager.create_process(name);
+				proc = processManager.get_process(name);
+			}
+
+			if (proc) {
+				std::vector<std::string> instructions;
+
+				// Generate instructions here...
+				std::random_device rd;
+				std::mt19937 gen(rd());
+
+				//TODO: READ minInstructions and maxInstructions from config file
+				const uint32_t minInstructions = 50;
+				const uint32_t maxInstructions = 10000;
+
+				std::uniform_int_distribution<> dis(minInstructions, maxInstructions);
+
+				int numInstructions = dis(gen);
+				std::vector<std::string> dummy_instructions;
+				for (int i = 0; i < numInstructions; ++i) {
+					dummy_instructions.push_back(schedulerManager.generate_rand_instruction(name));
+				}
+
+				proc->load_instructions(dummy_instructions);
+				consoleManager.attach_screen(name, proc);
+
+				std::cout << "\033[32mGenerated " << instructions.size() << " instructions for process '" << name << "'.\033[0m\n";
+			}
+
 			return true;
 		}
 		else if (flag == "-r") {
@@ -148,7 +184,7 @@ int main() {
 
 		auto typedCommand = commandMap.find(command);
 		if (command.rfind("screen ", 0) == 0) {
-			shouldClear = screen_command(command);
+			shouldClear = screen_command(command, schedulerManager);
 		}	
 		else if (typedCommand != commandMap.end()) {
 			commandMap[command](); // Call the function associated with the command
