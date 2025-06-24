@@ -82,15 +82,6 @@ int Process::getTotalLines() const {
     return totalLines;
 }
 
-void Process::generate_instructions() {
-    int count = 10;
-
-    for (int i = 0; i < count; ++i) {
-        add_instruction("print: Hello World! from " + name + " [Line " + std::to_string(i + 1) + "]");
-		totalLines = instructions.size();
-    }
-}
-
 void Process::execute_instruction(const std::string& instruction, int coreId) {
     size_t parenStart = instruction.find('(');
     size_t parenEnd = instruction.find(')', parenStart);
