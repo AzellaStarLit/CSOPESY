@@ -7,6 +7,7 @@
 #include <chrono>
 #include <fstream>
 
+int Process::nextId = 1;  // nextId process for process-smi
 std::unordered_map<std::string, std::function<void(const std::string&)>> instructionList;
 
 void Process::setTimestamp() {
@@ -18,21 +19,21 @@ void Process::setTimestamp() {
 }
 
 Process::Process()
-    : name("default"), instructionPointer(0), totalLines(0) {
+    : name("default"), instructionPointer(0), totalLines(0), id(nextId++) {  // Updated constructor for nextId
     setTimestamp();
     instructionList["PRINT"] = [this](const std::string& msg) {
         execute_print(msg, -1); };
 }
 
 Process::Process(const std::string& name)
-    : name(name), instructionPointer(0), totalLines(0) {
+    : name(name), instructionPointer(0), totalLines(0), id(nextId++) { // Updated constructor for nextId
     setTimestamp();
 	instructionList["PRINT"] = [this](const std::string& msg) { 
         execute_print(msg, -1); };
 }
 
 Process::Process(const std::string& name, int instructionCount)
-    : name(name), instructionPointer(0), totalLines(instructionCount) {
+    : name(name), instructionPointer(0), totalLines(instructionCount), id(nextId++) { // Updated constructor for nextId
     setTimestamp();
     instructionList["PRINT"] = [this](const std::string& msg) {
         execute_print(msg, -1); };
@@ -157,4 +158,15 @@ void Process::setCompletionTime() {
     std::ostringstream oss;
     oss << std::put_time(localTime, "%m/%d/%Y, %I:%M:%S %p");
     completionTimeStamp = oss.str();
+}
+
+
+// Newly added functions for getId and get_log
+
+int Process::getId() const {
+    return id;
+}
+
+const std::vector<std::string>& Process::get_log() const {
+    return log;
 }
