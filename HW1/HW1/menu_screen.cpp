@@ -12,13 +12,13 @@ LABARRETE, Lance Desmond
 #include <ctime>
 #include <iomanip>
 #include <sstream>
+#include <random>
 
 #include "Utilities.h"
 #include "Console.h"
 #include "ProcessManager.h"
 #include "SchedulerManager.h"
-#include <random>
-
+#include "ConfigManager.h"
 
 // Global functions for initialization
 void print_header();
@@ -34,6 +34,21 @@ ConsoleManager consoleManager;
 SchedulerManager schedulerManager;
 std::unordered_map<std::string, Console> screens;
 
+ConfigManager configManager;
+bool isInitialized = false;
+
+void initialize() {
+	if (isInitialized) {
+		std::cout << "\033[33mSystem already initialized.\033[0m\n";
+		return;
+	}
+	if (configManager.loadFromFile("config.txt")) {
+		isInitialized = true;
+		std::cout << "\033[32mInitialization complete.\033[0m\n";
+	} else {
+		std::cout << "\033[31mInitialization failed.\033[0m\n";
+	}
+}
 
 bool screen_command(const std::string& command, SchedulerManager& schedulerManager) {
 	std::mutex processConsoleMutex;
@@ -153,7 +168,7 @@ int main() {
 
 	std::string command;
 	std::unordered_map<std::string, void(*)()> commandMap = {
-		// List of commands for the Main Menu
+        // List of commands for the Main Menu
 		{"initialize", initialize},
 		{"scheduler-start", scheduler_start},
 		{"scheduler-stop", scheduler_stop},
@@ -172,14 +187,22 @@ int main() {
 
 		auto typedCommand = commandMap.find(command);
 		if (command.rfind("screen ", 0) == 0) {
+			if (!isInitialized) {
+				std::cout << "\033[31mError: Please run 'initialize' first.\033[0m\n";
+				continue;
+			}
 			shouldClear = screen_command(command, schedulerManager);
 		}	
 		else if (typedCommand != commandMap.end()) {
+			if (!isInitialized && command != "initialize" && command != "exit") {
+				std::cout << "\033[31mError: Please run 'initialize' first.\033[0m\n";
+				continue;
+			}
 			commandMap[command](); // Call the function associated with the command
 		}
 		else {
 			std::cout << "\033[31mCommand not recognized. Please try again.\n\033[0m";
-			std::cout << "\033[1;33mType \'exit\' to quit, \'clear\' to clear the screen\n\033[0m";
+			std::cout << "\033[1;33mType 'exit' to quit, 'clear' to clear the screen\n\033[0m";
 		}
 
 		if(shouldClear) {
