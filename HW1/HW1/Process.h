@@ -18,6 +18,10 @@ private:
     int currentCoreId = -1;
     std::string completionTimeStamp;
 
+    // Newly added private values for getting id for process-smi
+    static int nextId;
+    int id;
+
 public:
 	Process();
 	Process(const std::string& name);
@@ -47,5 +51,9 @@ public:
     std::string getCompletionTimestamp() const { return completionTimeStamp; }
     std::string getCreationTimestamp() const { return creationTimestamp; }
     void setCompletionTime();
+
+    // Newly added private values for getting id and log for process-smi
+    int getId() const;
+    const std::vector<std::string>& get_log() const;
 };
 
