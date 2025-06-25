@@ -27,7 +27,7 @@ void Console::draw() {
     std::cout << "\033[36m--- Screen: " << name << " ---\033[0m\n";
     std::cout << "Process Name: " << screenProcess->getName() << "\n";
     std::cout << "Current Instruction: " << screenProcess->getCurrentInstruction() << "\n";
-	std::cout << "Total Lines: " << screenProcess->getCurrentLine() << "/" << screenProcess->getTotalLines() << "\n";
+    std::cout << "Total Lines: " << screenProcess->getCurrentLine() << "/" << screenProcess->getTotalLines() << "\n";
     std::cout << "Created At: " << creationTimestamp << "\n";
     std::cout << "Type 'exit' to return to the main menu.\n";
 
@@ -46,8 +46,25 @@ void Console::draw() {
         else if (input == "log") {
             if (screenProcess) screenProcess->show_log();
         }
+        else if (input == "process-smi") {  // process-smi logic
+            std::cout << "\n\033[35m[Process SMI]\033[0m\n";
+            std::cout << "Process Name: " << screenProcess->getName() << "\n";
+            std::cout << "ID: " << screenProcess->getId() << "\n";
+            std::cout << "Logs:\n";
+
+            for (const std::string& logEntry : screenProcess->get_log()) {
+                std::cout << logEntry << "\n";
+            }
+
+            std::cout << "\nCurrent Instruction Line: " << screenProcess->getCurrentLine() << "\n";
+            std::cout << "Lines of Code: " << screenProcess->getTotalLines() << "\n";
+
+            if (screenProcess->isFinished()) {
+                std::cout << "\n\033[32mFinished!\033[0m\n";
+            }
+        }
         else {
-            std::cout << "Unknown command. Try 'print' or 'log'.\n";
+            std::cout << "Unknown command. Try 'print', 'log', or 'process-smi'.\n";
         }
     }
 }
