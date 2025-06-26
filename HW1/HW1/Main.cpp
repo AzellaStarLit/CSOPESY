@@ -175,6 +175,8 @@ bool screen_command(const std::string& command) {
 		//prints the ASCII header
 		print_header();
 
+		
+
 		// TEST: Manually create 10 processes with 100 instructions
 		for (int i = 1; i <= 10; ++i) {
 			std::string name = "process_" + std::to_string(i);
@@ -187,6 +189,7 @@ bool screen_command(const std::string& command) {
 			consoleManager.attach_screen(name, p);          // create screen for the process
 		}
 
+		
 		scheduler->start();
 
 		while (true) {

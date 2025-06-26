@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <mutex>
 
 
 class Process {
@@ -17,13 +18,13 @@ private:
     std::vector<std::string> instructions; //list of instructions
     std::vector<std::string> log;
 
-
     bool finished = false;
     int currentCoreId = -1; //-1 for default core [N/A]
 
     void setTimestamp(); 
     void execute_print(const std::string& msg, int coreId); //temporary since we only execute print for now
 
+   
 public:
 
     //constructors
@@ -36,6 +37,7 @@ public:
     void execute_instruction(const std::string& instruction, int coreId);
 
     void add_instruction(const std::string& instr);
+    void incrementInstructionPointer();
 
     void run_print(); //used this for the current version
     void show_log() const; //logs

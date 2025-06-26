@@ -7,6 +7,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <mutex>
 
 //this is a list of instructions recognized by a process
 std::unordered_map<std::string, std::function<void(const std::string&)>> instructionList;
@@ -129,6 +130,11 @@ void Process::execute_print(const std::string& msg, int coreId) {
         std::cerr << "Unable to open log file for writing." << std::endl;
     }
 
+}
+
+void Process::incrementInstructionPointer() {
+    instructionPointer++;
+    std::cout << name << ": instructionPointer is now " << instructionPointer << "\n";
 }
 
 //------------------DEBUG------------------//

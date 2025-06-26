@@ -3,6 +3,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <condition_variable>
 
 //start the worker threads
 void RRScheduler::start() {
@@ -15,61 +16,71 @@ void RRScheduler::start() {
 	std::cout << "RR scheduler started\n";
 }
 
-void RRScheduler::worker_loop(int coreId) {
-	while (isRunning)
-	{
-		Process* p = nullptr;
-
-		{
-			std::unique_lock<std::mutex> lock(queueMutex);
-
-			//ready queue
-			if (!readyQueue.empty()) {
-				p = readyQueue.front();
-				readyQueue.pop();
-			}
-		}
-
-		if (p) {
-
-			p->setCurrentCore(coreId); 
-
-			int instructionsToRun = std::min(timeQuantum / 100, p->getTotalLines() - p->getCurrentLine());
-
-			for (int i = 0; i < instructionsToRun; i++) {
-
-				if (p->isFinished()) break;
-
-				std::string instr = p->getCurrentInstruction(); //get current instruction
-				p->execute_instruction(instr, coreId); //execute current instruction
-
-				std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-			}
-
-			//if the process is not yet finished after time quantum, put it back in ready queue
-			if (!p->isFinished()) {
-				std::unique_lock<std::mutex> lock(queueMutex);
-				readyQueue.push(p);
-			}
-		}
-		else {
-			p->markFinished();
-		}
-	}
-}
-
 void RRScheduler::stop() {
 	isRunning = false;
 	cv.notify_all();
+
+	for (auto& worker : workers) {
+		if (worker.joinable()) {
+			worker.join();
+		}
+	}
+	workers.clear();
+}
+
+
+void RRScheduler::add_process(Process* p) {
+	std::lock_guard<std::mutex> lock(queueMutex);
+	readyQueue.push(p);
+	cv.notify_one();
+}
+
+bool RRScheduler::has_ready_process() const {
+	return !readyQueue.empty();
 }
 
 Process* RRScheduler::get_next_process() {
-	std::unique_lock<std::mutex> lock(queueMutex);
+	std::lock_guard<std::mutex> lock(queueMutex);
+	if (!readyQueue.empty()) {
+		Process* p = readyQueue.front();
+		readyQueue.pop();
+		return p;
+	}
 
-	if (readyQueue.empty()) return nullptr;
+	return nullptr;
+} 
 
-	Process* p = readyQueue.front();
-	readyQueue.pop();
-	return p;
+void RRScheduler::worker_loop(int coreId) {
+	while (isRunning) {
+		Process* process = nullptr;
+
+		{
+			std::unique_lock<std::mutex> lock(queueMutex);
+			cv.wait(lock, [&]() { return !readyQueue.empty() || !isRunning; });
+
+			if (!isRunning && readyQueue.empty()) return;
+
+			process = readyQueue.front();
+			readyQueue.pop();
+		}
+
+		if (process && !process->isFinished()) {
+			process->setCurrentCore(coreId);
+
+			for (int i = 0;  i < timeQuantum; ++i) {
+				if (process->isFinished()) break;
+
+				std::string instruction = process->getCurrentInstruction();
+				process->execute_instruction(instruction, coreId);
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			}
+
+			if (!process->isFinished()) {
+				add_process(process); //back to queue
+			}
+			else {
+				process->markFinished();
+			}
+		}
+	}
 }

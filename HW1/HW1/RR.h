@@ -1,11 +1,15 @@
 #pragma once
 
 #include "BaseScheduler.h"
+#include "Process.h"
 
+#include <queue>
+#include <vector>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
-#include <vector>
+#include <chrono>
+#include <iostream>
 
 class RRScheduler : public Scheduler {
 private:
@@ -28,6 +32,8 @@ public:
 
 	void start() override;
 	void stop() override;
+	void add_process(Process* p) override;
+	bool has_ready_process() const override;
 	Process* get_next_process() override;
 
 	//1 process = 1 core [thread]
