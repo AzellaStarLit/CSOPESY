@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <thread>
 
 //this is a list of instructions recognized by a process
 std::unordered_map<std::string, std::function<void(const std::string&)>> instructionList;
@@ -63,7 +64,7 @@ void Process::add_instruction(const std::string& instr) {
 
 //this will generate and add instructions to the list
 void Process::generate_instructions() {
-    int count = 10;
+    int count = 10; //for testing only, this should come from random number based on config range
 
     for (int i = 0; i < count; ++i) {
         add_instruction("print: Hello World! from " + name + " [Line " + std::to_string(i + 1) + "]");
@@ -88,6 +89,11 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
 
     if (command == "PRINT") {
         execute_print(argument, coreId);
+        instructionPointer++;
+        if (instructionPointer >= totalLines) markFinished();
+    }
+    else if (command == "SLEEP") {
+        execute_sleep(argument);
         instructionPointer++;
         if (instructionPointer >= totalLines) markFinished();
     }
@@ -130,6 +136,17 @@ void Process::execute_print(const std::string& msg, int coreId) {
         std::cerr << "Unable to open log file for writing." << std::endl;
     }
 
+}
+
+void Process::execute_sleep(const std::string& msString) {
+    try {
+        int ms = std::stoi(msString);
+        std::cout << name << ": sleeping for " << ms << " ms\n";
+        std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Invalid sleep duration: " << msString << "\n";
+    }
 }
 
 void Process::incrementInstructionPointer() {

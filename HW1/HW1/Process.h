@@ -23,6 +23,7 @@ private:
 
     void setTimestamp(); 
     void execute_print(const std::string& msg, int coreId); //temporary since we only execute print for now
+    void execute_sleep(const std::string& msString);
 
    
 public:
