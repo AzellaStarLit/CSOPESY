@@ -9,6 +9,7 @@
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include <algorithm>
 
 //this is a list of instructions recognized by a process
 std::unordered_map<std::string, std::function<void(const std::string&)>> instructionList;
@@ -97,6 +98,25 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
         instructionPointer++;
         if (instructionPointer >= totalLines) markFinished();
     }
+    else if (command == "DECLARE") {
+        execute_declare(argument);
+        instructionPointer++;
+        if (instructionPointer >= totalLines) markFinished();
+    }
+    else if (command == "ADD") {
+        execute_add(argument);
+        instructionPointer++;
+        if (instructionPointer >= totalLines) markFinished();
+    }
+    else if (command == "SLEEP") {
+        execute_sleep(argument);
+        instructionPointer++;
+        if (instructionPointer >= totalLines) markFinished();
+    } else if (command == "FOR") {
+        execute_for(argument, coreId, 1);
+        instructionPointer++;
+        if (instructionPointer >= totalLines) markFinished();
+    }
     else {
         std::cout << "Unknown command: " << command << std::endl;
     }
@@ -138,6 +158,71 @@ void Process::execute_print(const std::string& msg, int coreId) {
 
 }
 
+void Process::execute_declare(const std::string& args) {
+    size_t comma = args.find(',');
+    if (comma == std::string::npos) {
+        std::cerr << "Invalid DECLARE format: " << args << "\n";
+        return;
+    }
+
+    std::string var = args.substr(0, comma);
+    std::string valStr = args.substr(comma + 1);
+    
+    try {
+        uint32_t value = std::stoul(valStr);
+        if (value > 65535) value = 65535; 
+        symbolTable[var] = static_cast<uint16_t>(value);
+    } catch (...) {
+        std::cerr << "Invalid value in DECLARE: " << args << "\n";
+    }
+}
+
+void Process::execute_add(const std::string& args) {
+    std::istringstream ss(args);
+    std::string var1, var2, var3;
+    getline(ss, var1, ',');
+    getline(ss, var2, ',');
+    getline(ss, var3, ',');
+
+    auto getValue = [this](const std::string& token) -> uint16_t {
+        if (symbolTable.find(token) != symbolTable.end()) return symbolTable[token];
+        try {
+            return static_cast<uint16_t>(std::stoul(token));
+        } catch (...) {
+            symbolTable[token] = 0; 
+            return 0;
+        }
+    };
+
+    uint32_t result = static_cast<uint32_t>(getValue(var2)) + static_cast<uint32_t>(getValue(var3));
+    if (result > 65535) result = 65535;
+
+    symbolTable[var1] = static_cast<uint16_t>(result);
+}
+
+void Process::execute_subtract(const std::string& args) {
+    std::istringstream ss(args);
+    std::string var1, var2, var3;
+    getline(ss, var1, ',');
+    getline(ss, var2, ',');
+    getline(ss, var3, ',');
+
+    auto getValue = [this](const std::string& token) -> uint16_t {
+        if (symbolTable.find(token) != symbolTable.end()) return symbolTable[token];
+        try {
+            return static_cast<uint16_t>(std::stoul(token));
+        } catch (...) {
+            symbolTable[token] = 0; 
+            return 0;
+        }
+    };
+
+    int result = static_cast<int>(getValue(var2)) - static_cast<int>(getValue(var3));
+    if (result < 0) result = 0;
+
+    symbolTable[var1] = static_cast<uint16_t>(result);
+}
+
 void Process::execute_sleep(const std::string& msString) {
     try {
         int ms = std::stoi(msString);
@@ -148,6 +233,73 @@ void Process::execute_sleep(const std::string& msString) {
         std::cerr << "Invalid sleep duration: " << msString << "\n";
     }
 }
+
+void Process::execute_for(const std::string& args, int coreId, int nestingLevel) {
+    if (nestingLevel > 3) {
+        std::cerr << "Exceeded maximum FOR loop nesting level.\n";
+        return;
+    }
+
+    // Find [ ... ] and repeat count
+    size_t openBracket = args.find('[');
+    size_t closeBracket = args.find(']', openBracket);
+
+    if (openBracket == std::string::npos || closeBracket == std::string::npos) {
+        std::cerr << "Invalid FOR loop format: missing brackets.\n";
+        return;
+    }
+
+    std::string instructionBlock = args.substr(openBracket + 1, closeBracket - openBracket - 1);
+    std::string repeatStr = args.substr(closeBracket + 2); // skip ", "
+
+    int repeatCount = 0;
+    try {
+        repeatCount = std::stoi(repeatStr);
+    } catch (...) {
+        std::cerr << "Invalid repeat count in FOR: " << repeatStr << "\n";
+        return;
+    }
+
+    // Split instructions by `;` or `,` or detect nested FOR
+    std::vector<std::string> innerInstructions;
+    std::string current;
+    int bracketDepth = 0;
+
+    for (char c : instructionBlock) {
+        if (c == '[') bracketDepth++;
+        if (c == ']') bracketDepth--;
+
+        if ((c == ',' || c == ';') && bracketDepth == 0) {
+            if (!current.empty()) {
+                innerInstructions.push_back(current);
+                current.clear();
+            }
+        } else {
+            current += c;
+        }
+    }
+    if (!current.empty()) innerInstructions.push_back(current);
+
+    // Repeat and execute
+    for (int i = 0; i < repeatCount; ++i) {
+        for (const std::string& instr : innerInstructions) {
+            std::string trimmed = instr;
+            trimmed.erase(0, trimmed.find_first_not_of(" \t")); // trim leading spaces
+
+            if (trimmed.find("FOR") == 0) {
+                size_t parenStart = trimmed.find('(');
+                size_t parenEnd = trimmed.rfind(')');
+                if (parenStart != std::string::npos && parenEnd != std::string::npos) {
+                    std::string forArgs = trimmed.substr(parenStart + 1, parenEnd - parenStart - 1);
+                    execute_for(forArgs, coreId, nestingLevel + 1);
+                }
+            } else {
+                execute_instruction(trimmed, coreId);
+            }
+        }
+    }
+}
+
 
 void Process::incrementInstructionPointer() {
     instructionPointer++;
@@ -174,6 +326,13 @@ void Process::run_print() {
     }
     else {
         std::cout << "Process " << name << " has finished all print commands." << std::endl;
+    }
+}
+
+void Process::show_symbol_table() const {
+    std::cout << "\n--- Symbol Table for Process: " << name << " ---\n";
+    for (const auto& [key, value] : symbolTable) {
+        std::cout << key << " = " << value << "\n";
     }
 }
 

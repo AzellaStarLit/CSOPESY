@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <unordered_map>
 
 
 class Process {
@@ -21,9 +22,15 @@ private:
     bool finished = false;
     int currentCoreId = -1; //-1 for default core [N/A]
 
+    std::unordered_map<std::string, uint16_t> symbolTable; // variable storage
+
     void setTimestamp(); 
     void execute_print(const std::string& msg, int coreId); //temporary since we only execute print for now
+    void execute_declare(const std::string& args);
+    void execute_add(const std::string& args);
+    void execute_subtract(const std::string& args);
     void execute_sleep(const std::string& msString);
+    void execute_for(const std::string& args, int coreId, int nestingLevel);
 
    
 public:
@@ -42,6 +49,7 @@ public:
 
     void run_print(); //used this for the current version
     void show_log() const; //logs
+    void show_symbol_table() const;
     
     std::string getName() const;
     std::string getCurrentInstruction() const;
