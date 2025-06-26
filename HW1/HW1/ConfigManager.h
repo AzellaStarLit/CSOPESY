@@ -15,11 +15,11 @@ public:
     unsigned int getDelaysPerExec() const { return delaysPerExec; }
 
 private:
-    int numCPU = 1;
-    std::string scheduler = "fcfs";
-    unsigned int quantumCycles = 1;
-    unsigned int batchProcessFreq = 1;
-    unsigned int minInstructions = 1;
-    unsigned int maxInstructions = 1;
-    unsigned int delaysPerExec = 0;
+    int numCPU;
+    std::string scheduler;
+    unsigned int quantumCycles;
+    unsigned int batchProcessFreq;
+    unsigned int minInstructions;
+    unsigned int maxInstructions;
+    unsigned int delaysPerExec;
 }; 

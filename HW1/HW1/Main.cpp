@@ -16,6 +16,8 @@ This is where the program loop will be running unless the user exits.
 #include <ctime>
 #include <iomanip>
 #include <sstream>
+#include <fstream>
+#include <random>
 
 #include "Utilities.h"
 #include "Console.h"
@@ -38,7 +40,7 @@ bool isInitialized = false;
 
 // Global functions for initialization
 void print_header();
-void initialize();
+//void initialize();
 void scheduler_start();
 //void scheduler_stop();
 void report_util();
@@ -221,28 +223,8 @@ bool screen_command(const std::string& command) {
 
 	int main() {
 
-		//TODO: THESE WILL BE READ FROM COFIG FILE
-		int cores = configManager.getNumCPU(); 
-		std::string algo = configManager.getScheduler();
-		int quantum = configManager.getQuantumCycles(); 
-
-		//this checks for the algorithms to use
-		if (algo == "FCFS") {
-			scheduler = std::make_unique<FCFSScheduler>(cores);
-		}
-		else if (algo == "RR") {
-			scheduler = std::make_unique<RRScheduler>(cores, quantum); 
-		}
-		else {
-			std::cerr << "Unknown algorithm\n";
-			return 1; 
-		}
-
-		//get the processes in process manager then load it to the ready queue
-		auto all = processManager.getAllProcesses();
-		for (auto* p : all) {
-			scheduler->add_process(p);
-		}
+		//prints the ASCII header
+		print_header();
 
 		//this is a list of commands recognized by the OS emulator
 		std::string command;
@@ -255,27 +237,6 @@ bool screen_command(const std::string& command) {
 			{"clear", clear},
 			{"exit", exit_program}
 		};
-
-
-		//prints the ASCII header
-		print_header();
-
-		
-
-		// TEST: Manually create 10 processes with 100 instructions
-		for (int i = 1; i <= 10; ++i) {
-			std::string name = "process_" + std::to_string(i);
-			
-			processManager.create_dummy(name, 100);            // register the process in manager
-
-			Process* p = processManager.get_process(name);
-
-			scheduler->add_process(p);                           // add to ready queue
-			consoleManager.attach_screen(name, p);          // create screen for the process
-		}
-
-		//start the scheduler [whatever was chosen
-		scheduler->start();
 
 		while (true) {
 
@@ -290,7 +251,48 @@ bool screen_command(const std::string& command) {
 			//when the process screen is found, clear the menu screen then display the process screen
 			auto typedCommand = commandMap.find(command);
 
-			if (command.rfind("screen ", 0) == 0) {
+			if (command == "initialize") {
+				initialize();
+
+				//TODO: THESE WILL BE READ FROM COFIG FILE
+				int cores = configManager.getNumCPU();
+				std::string algo = configManager.getScheduler();
+				int quantum = configManager.getQuantumCycles();
+
+				//this checks for the algorithms to use
+				if (algo == "fcfs") {
+					scheduler = std::make_unique<FCFSScheduler>(cores);
+				}
+				else if (algo == "rr") {
+					scheduler = std::make_unique<RRScheduler>(cores, quantum);
+				}
+				else {
+					std::cerr << "Unknown algorithm\n";
+					return 1;
+				}
+
+				//get the processes in process manager then load it to the ready queue
+				auto all = processManager.getAllProcesses();
+				for (auto* p : all) {
+					scheduler->add_process(p);
+				}
+
+				// TEST: Manually create 10 processes with 100 instructions
+				for (int i = 1; i <= 10; ++i) {
+					std::string name = "process_" + std::to_string(i);
+
+					processManager.create_dummy(name, 100);            // register the process in manager
+
+					Process* p = processManager.get_process(name);
+
+					scheduler->add_process(p);                           // add to ready queue
+					consoleManager.attach_screen(name, p);          // create screen for the process
+				}
+
+				//start the scheduler [whatever was chosen after intialization] 
+				scheduler->start();
+			}
+			else if (command.rfind("screen ", 0) == 0) {
 				if (!isInitialized) {
 					std::cout << "\033[31mError: Please run 'initialize' first.\033[0m\n";
 					continue;

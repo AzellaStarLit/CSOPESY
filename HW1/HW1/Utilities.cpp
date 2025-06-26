@@ -23,6 +23,7 @@ void print_header() {
 	std::cout << "\033[1;33mType \'exit\' to quit, \'clear\' to clear the screen\n\033[0m";
 }
 
+/*
 void initialize() {
 	// Initialize any necessary variables or settings here
 	std::cout << "initialize command recognized. Doing something.\n";
@@ -31,7 +32,7 @@ void initialize() {
 void report_util() {
 	// Report the utilization of the system here
 	std::cout << "report_util command recognized. Doing something.\n";
-}
+}*/
 
 void clear() {
 	// Clear the screen here
