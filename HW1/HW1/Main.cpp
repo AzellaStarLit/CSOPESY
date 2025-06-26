@@ -222,9 +222,9 @@ bool screen_command(const std::string& command) {
 	int main() {
 
 		//TODO: THESE WILL BE READ FROM COFIG FILE
-		int cores = 4; 
-		std::string algo = "RR";
-		int quantum = 2; 
+		int cores = configManager.getNumCPU(); 
+		std::string algo = configManager.getScheduler();
+		int quantum = configManager.getQuantumCycles(); 
 
 		//this checks for the algorithms to use
 		if (algo == "FCFS") {
