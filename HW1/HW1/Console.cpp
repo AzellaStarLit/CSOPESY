@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <sstream>
 #include <cstdlib> // for system()
+#include "marqueeConsole.h"
 
 //------------------CONSTRUCTOR------------------//
 Console::Console()
@@ -77,5 +78,6 @@ void Console::draw_process_screen() {
 }
 
 void Console::draw_marquee_screen() {
-    //TODO:CALL MARQUEE
+    MarqueeConsole marquee(name);
+    marquee.draw(); 
 }

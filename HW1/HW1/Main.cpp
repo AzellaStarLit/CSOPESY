@@ -12,8 +12,7 @@ This is where the program loop will be running unless the user exits.
 
 #include <iostream>
 #include <string>
-#include <unordered_map>std::unordered_map<std::string, Process> processes;
-#include <ctime>
+#include <unordered_map>std::unordered_map<std::string, Process> processes;#include <ctime>
 #include <iomanip>
 #include <sstream>
 #include <fstream>
@@ -27,6 +26,7 @@ This is where the program loop will be running unless the user exits.
 #include "RR.h"
 #include "SchedulerController.h"
 #include "ConfigManager.h"
+#include "marqueeConsole.h"
 
 
 
@@ -208,6 +208,12 @@ bool screen_command(const std::string& command) {
 	}
 }
 
+void run_marquee() {
+	MarqueeConsole marquee("marquee");
+	marquee.draw(); 
+	system("cls"); 
+}
+
 void exit_program() {
 	// Exit the screen here
 	scheduler->stop(); 
@@ -228,6 +234,7 @@ void exit_program() {
 			{"scheduler-stop", scheduler_stop},
 			{"report-util", report_util},
 			{"clear", clear},
+			{"marquee", run_marquee},
 			{"exit", exit_program}
 		};
 
@@ -296,7 +303,16 @@ void exit_program() {
 					continue;
 				}
 				shouldClear = screen_command(command);
-			} 
+			}
+			else if (command == "marquee") {
+				if (!isInitialized) {
+					std::cout << "\033[31mError: Please run 'initialize' first.\033[0m\n";
+					continue;
+				}
+
+				run_marquee();
+				shouldClear = true; 
+			}
 			else if (typedCommand != commandMap.end()) {
 				if (!isInitialized && command != "initialize" && command != "exit") {
 					std::cout << "\033[31mError: Please run 'initialize' first.\033[0m\n";

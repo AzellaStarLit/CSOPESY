@@ -139,7 +139,10 @@
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="ConsoleManager.cpp" />
     <ClCompile Include="FCFS.cpp" />
+    <ClCompile Include="kpThread.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="marqueeConsole.cpp" />
+    <ClCompile Include="marqueeThread.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessManager.cpp" />
     <ClCompile Include="RR.cpp" />
@@ -152,10 +155,14 @@
     <ClInclude Include="ConsoleManager.h" />
     <ClInclude Include="FCFS.h" />
     <ClInclude Include="BaseScheduler.h" />
+    <ClInclude Include="kpThread.h" />
+    <ClInclude Include="marqueeConsole.h" />
+    <ClInclude Include="marqueeThread.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="ProcessManager.h" />
     <ClInclude Include="RR.h" />
     <ClInclude Include="SchedulerController.h" />
+    <ClInclude Include="sharedState.h" />
     <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -18,6 +18,6 @@ public:
     bool isAttachedToProcess() const; 
 
     //chooses the appropriate screen [for process or marquee or smth else]
-    void draw(); 
+    virtual void draw(); 
 };
 
