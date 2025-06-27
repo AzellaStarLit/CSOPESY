@@ -46,6 +46,15 @@ void scheduler_start() {
 	static const std::string templates[] = {
 		"PRINT(\"Hello world from ",
 		"PRINT(\"We love CSOPESY <3 - ",
+		"DECLARE(var_x, 0)",
+		"DECLARE(var_y, 5)",
+		"ADD(var_z, var_x, var_y)",
+		"SUBTRACT(var_a, var_y, var_x)",
+		"SLEEP(3)",
+		"SLEEP(2)",
+		"FOR([PRINT(\"Looping inside process\")], 2)",
+		"FOR([ADD(var_i, var_x, 1)], 2)",
+		"FOR([SUBTRACT(var_j, var_y, 1)], 2)",
 	};
 
 	int counter = 1;
@@ -141,3 +150,4 @@ void scheduler_stop() {
 	std::cout << "Scheduler stopped.\n";
 }
 */
+
