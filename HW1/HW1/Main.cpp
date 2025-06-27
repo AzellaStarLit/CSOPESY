@@ -259,6 +259,11 @@ void exit_program() {
 				std::string algo = configManager.getScheduler();
 				int quantum = configManager.getQuantumCycles();
 
+				//sanitize the algorithm string
+				if (!algo.empty() && algo.front() == '"' && algo.back() == '"') {
+					algo = algo.substr(1, algo.length() - 2);
+				}
+
 				//this checks for the algorithms to use
 				if (algo == "fcfs") {
 					scheduler = std::make_unique<FCFSScheduler>(cores);
@@ -279,20 +284,6 @@ void exit_program() {
 				for (auto* p : all) {
 					scheduler->add_process(p);
 				}
-
-				/*
-				// TEST: Manually create 10 processes with 100 instructions
-				for (int i = 1; i <= 10; ++i) {
-					std::string name = "process_" + std::to_string(i);
-
-					processManager.create_dummy(name, 100);            // register the process in manager
-
-					Process* p = processManager.get_process(name);
-
-					scheduler->add_process(p);                           // add to ready queue
-					consoleManager.attach_screen(name, p);          // create screen for the process
-				}
-				*/
 
 				//start the scheduler [whatever was chosen after initialization] 
 				scheduler->start();
