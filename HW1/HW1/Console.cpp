@@ -36,13 +36,6 @@ void Console::draw_process_screen() {
     std::cout << "Created At: " << screenProcess->getCreationTimestamp() << "\n";
     std::cout << "Type 'exit' to return to the main menu.\n";
 
-    {
-        std::lock_guard<std::mutex> lock(outputMutex);
-        for (const auto& line : outputBuffer) {
-            std::cout << line << "\n";
-        }
-        outputBuffer.clear();  // Clear after printing
-    }
 
     std::string input;
 

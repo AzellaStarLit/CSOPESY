@@ -135,6 +135,11 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
         instructionPointer++;
         if (instructionPointer >= totalLines) markFinished();
     }
+    else if (command == "SUBTRACT") {
+        execute_subtract(argument);
+        instructionPointer++;
+        if (instructionPointer >= totalLines) markFinished();
+    }
     else if (command == "SLEEP") {
         execute_sleep(argument);
         instructionPointer++;
