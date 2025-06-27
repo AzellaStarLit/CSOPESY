@@ -14,6 +14,8 @@ LABARRETE, Lance Desmond
 #include <sstream>
 #include <random>
 #include <fstream>
+#include <set>
+
 
 #include "Utilities.h"
 #include "Console.h"
@@ -51,6 +53,7 @@ void initialize() { // intializer logic
 	}
 }
 
+
 void report_util() {
 	if (!isInitialized) {
 		std::cout << "\033[31mError: Please run 'initialize' first.\033[0m\n";
@@ -68,11 +71,22 @@ void report_util() {
 		outfile << "No processes available.\n";
 	} else {
 		std::vector<Process*> running, finished;
+		std::set<int> activeCores;
 
 		for (auto proc : allProcesses) {
 			if (proc->isFinished()) finished.push_back(proc);
 			else running.push_back(proc);
 		}
+
+		
+		int totalCores = configManager.getNumCPU();
+		int usedCores = static_cast<int>(activeCores.size());
+		int availableCores = std::max(0, totalCores - usedCores);
+		int utilization = (totalCores == 0) ? 0 : (usedCores * 100 / totalCores);
+
+		outfile << "CPU utilization: " << utilization << "%\n";
+		outfile << "Cores used: " << usedCores << "\n";
+		outfile << "Cores available: " << availableCores << "\n\n";
 
 		outfile << "=============================================\n";
 		outfile << "Running processes:\n";
@@ -148,62 +162,55 @@ bool screen_command(const std::string& command, SchedulerManager& schedulerManag
 			return true;
 		}
 	} else if (flag == "-ls") {
-
 		auto allProcesses = processManager.getAllProcesses();
 
 		if (allProcesses.empty()) {
 			std::cout << "No processes available.\n";
-		}
-		else {
-			std::vector<Process*> running, finished;
-
-			for (auto proc : allProcesses) {
-				if (proc->isFinished()) finished.push_back(proc);
-				else running.push_back(proc);
-			}
-
-			std::cout << "RUNNING PROCESSES: \n";
-			if (running.empty()) {
-				std::cout << "No running processes. \n";
-
-			}
-			else
-			{
-				std::cout << std::left << std::setw(20) << "Name"
-					<< std::setw(10) << "Core"
-					<< std::setw(15) << "Progress"
-					<< "Creation Time\n";
-				std::cout << std::string(60, '-') << "\n";
-				for (auto proc : running) {
-					std::cout << std::left << std::setw(20) << proc->getName()
-						<< std::setw(10) << std::to_string(proc->getCurrentCore())
-						<< std::setw(15) << (std::to_string(proc->getCurrentLine()) + " / " + std::to_string(proc->getTotalLines()))
-						<< proc->getCreationTimestamp() << "\n";
-				}
-			}
-			std::cout << "\nFINISHED PROCESSES: \n";
-
-			if (finished.empty()) {
-				std::cout << "No finished processes.\n";
-			}
-			else {
-				std::cout << std::left << std::setw(20) << "Name"
-					<< std::setw(25) << "Creation Time"
-					<< "Completioin Time\n";
-				std::cout << std::string(60, '-') << "\n";
-
-				for (auto proc : finished) {
-					std::cout << std::left << std::setw(20) << proc->getName()
-						<< std::setw(25) << proc->getCreationTimestamp()
-						<< proc->getCompletionTimestamp() << "\n";
-				}
-			}
-
-			std::cout << "\n";
-
 			return false;
 		}
 
+		std::vector<Process*> running, finished;
+		std::set<int> activeCores;
+
+		for (auto proc : allProcesses) {
+			if (proc->isFinished()) {
+				finished.push_back(proc);
+			} else {
+				running.push_back(proc);
+				activeCores.insert(proc->getCurrentCore());
+			}
+		}
+
+		int totalCores = configManager.getNumCPU(); // dynamic from config.txt
+		int usedCores = static_cast<int>(activeCores.size());
+		int availableCores = std::max(0, totalCores - usedCores);
+		int utilization = (totalCores == 0) ? 0 : (usedCores * 100 / totalCores);
+
+		std::cout << "CPU utilization: " << utilization << "%\n";
+		std::cout << "Cores used: " << usedCores << "\n";
+		std::cout << "Cores available: " << availableCores << "\n\n";
+
+		std::cout << "=============================================\n";
+		std::cout << "Running processes:\n";
+		for (auto proc : running) {
+			std::cout << proc->getName()
+		          	<< "  (" << proc->getCreationTimestamp() << ")"
+		          	<< "   Core: " << proc->getCurrentCore()
+		          	<< "   " << proc->getCurrentLine() << " / " << proc->getTotalLines()
+		          	<< "\n";
+		}
+
+		std::cout << "\nFinished processes:\n";
+		for (auto proc : finished) {
+			std::cout << proc->getName()
+		          	<< "  (" << proc->getCreationTimestamp() << ")"
+		          	<< "   Finished   "
+		          	<< proc->getTotalLines() << " / " << proc->getTotalLines()
+		          	<< "\n";
+		}
+
+		std::cout << "\n";
+		return false;
 	} else {
 		std::cout << "\033[31mInvalid screen command. Use: screen -s <name> or screen -r <name>\n\033[0m";
 		return false;
