@@ -59,9 +59,9 @@ void Console::draw_process_screen() {
             //std::cout << "ID: " << screenProcess->getId() << "\n";
             std::cout << "Logs:\n";
 
-            //for (const std::string& logEntry : screenProcess->get_log()) {
-            //    std::cout << logEntry << "\n";
-            //}
+            for (const std::string& logEntry : screenProcess->get_log()) {
+                std::cout << logEntry << "\n";
+            }
 
             std::cout << "\nCurrent Instruction Line: " << screenProcess->getCurrentLine() << "\n";
             std::cout << "Lines of Code: " << screenProcess->getTotalLines() << "\n";

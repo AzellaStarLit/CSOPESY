@@ -17,7 +17,7 @@ private:
     int totalLines; 
 
     std::vector<std::string> instructions; //list of instructions
-    std::vector<std::string> log;
+    std::vector<std::string> log; //list of logs
 
     bool finished = false;
     int currentCoreId = -1; //-1 for default core [N/A]
@@ -53,6 +53,7 @@ public:
     void run_print(); //used this for the current version
     void show_log() const; //logs
     void show_symbol_table() const;
+    const std::vector<std::string>& get_log() const;
     
     std::string getName() const;
     std::string getCurrentInstruction() const;
@@ -62,6 +63,7 @@ public:
 
     std::string getCreationTimestamp() const { return creationTimestamp; }
     std::string getCompletionTimestamp() const { return completionTimestamp; }
+    std::string get_current_timestamp() const;
 
     void setCompletionTimestamp();
     void setCurrentCore(int core) { currentCoreId = core; }
