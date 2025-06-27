@@ -52,6 +52,7 @@ void exit_program();
 bool screen_command(const std::string& command) {
 
 	//get the command
+	std::mutex processConsoleMutex;
 	std::istringstream iss(command);
 	std::string screenCmd, flag, name;
 	iss >> screenCmd >> flag >> name;
@@ -114,6 +115,69 @@ bool screen_command(const std::string& command) {
 	
 	//screen -s creates a screen for the process
 	if (flag == "-s") {
+		std::lock_guard<std::mutex> lock(processConsoleMutex);
+
+		if (processManager.exists(name)) {
+			std::cout << "Process '" << name << "' already exists. Use 'screen -r " << name << "' to resume.\n";
+			return false;
+		}
+
+		static const std::string templates[] = {
+			"DECLARE(var_x, 0)",
+			"DECLARE(var_y, 5)",
+			"ADD(var_z, var_x, var_y)",
+			"SUBTRACT(var_a, var_y, var_x)",
+			"SLEEP(300)",
+			"SLEEP(2000)",
+			"FOR([PRINT(\"Looping inside process\")], 2)",
+			"FOR([ADD(var_i, var_x, 1)], 2)",
+			"FOR([SUBTRACT(var_j, var_y, 1)], 2)",
+			"PRINT(\"Hello world from process\")",
+			"PRINT(\"We love CSOPESY <3\")"
+		};
+
+		// Get min and max instructions from config
+		uint32_t minInstructions = configManager.getMinInstructions();
+		uint32_t maxInstructions = configManager.getMaxInstructions();
+
+		if (minInstructions > maxInstructions) std::swap(minInstructions, maxInstructions);
+
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution<> instructionCountDist(minInstructions, maxInstructions);
+		std::uniform_int_distribution<> templateIndexDist(0, sizeof(templates) / sizeof(templates[0]) - 1);
+
+		// Generate random number of instructions
+		int numInstructions = instructionCountDist(gen);
+
+		// Create instructions vector
+		std::vector<std::string> instructions;
+		for (int i = 0; i < numInstructions; ++i) {
+			std::string instr = templates[templateIndexDist(gen)];
+			instructions.push_back(instr);
+		}
+
+		// Create the process and load instructions
+		processManager.create_process(name);
+		Process* p = processManager.get_process(name);
+
+		if (p) {
+			p->load_instructions(instructions);
+			consoleManager.attach_screen(name, p);
+
+			if (scheduler) {
+				scheduler->add_process(p);
+			}
+			
+			std::cout << "\033[32mGenerated " << instructions.size() << " instructions for process '" << name << "'.\033[0m\n";
+			// consoleManager.resume_screen(name);
+
+			return true;
+		}
+
+		// Add process to scheduler!
+
+		/*
 		if (processManager.exists(name)) {
 			std::cout << "Process '" << name << "' already exists. Use 'screen -r " << name << "' to resume.\n";
 			return false;
@@ -121,6 +185,7 @@ bool screen_command(const std::string& command) {
 
 		consoleManager.create_screen_with_process(name); 
 		return true;
+		*/
 	}
 		
 

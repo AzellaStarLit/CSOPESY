@@ -36,6 +36,14 @@ void Console::draw_process_screen() {
     std::cout << "Created At: " << screenProcess->getCreationTimestamp() << "\n";
     std::cout << "Type 'exit' to return to the main menu.\n";
 
+    {
+        std::lock_guard<std::mutex> lock(outputMutex);
+        for (const auto& line : outputBuffer) {
+            std::cout << line << "\n";
+        }
+        outputBuffer.clear();  // Clear after printing
+    }
+
     std::string input;
 
     //there will be another loop in the process screen that waits for user input [exit, log, print, other commands within a process]
@@ -51,6 +59,23 @@ void Console::draw_process_screen() {
         }
         else if (input == "log") {
             if (screenProcess) screenProcess->show_log();
+        }
+        else if (input == "process-smi") {  // process-smi logic
+            std::cout << "\n\033[35m[Process SMI]\033[0m\n";
+            std::cout << "Process Name: " << screenProcess->getName() << "\n";
+            //std::cout << "ID: " << screenProcess->getId() << "\n";
+            std::cout << "Logs:\n";
+
+            //for (const std::string& logEntry : screenProcess->get_log()) {
+            //    std::cout << logEntry << "\n";
+            //}
+
+            std::cout << "\nCurrent Instruction Line: " << screenProcess->getCurrentLine() << "\n";
+            std::cout << "Lines of Code: " << screenProcess->getTotalLines() << "\n";
+
+            if (screenProcess->isFinished()) {
+                std::cout << "\n\033[32mFinished!\033[0m\n";
+            }
         }
         else {
             std::cout << "Unknown command. Try 'print' or 'log'.\n";
