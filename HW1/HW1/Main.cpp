@@ -143,6 +143,12 @@ bool screen_command(const std::string& command) {
 	}
 }
 
+void exit_program() {
+	// Exit the screen here
+	scheduler->stop(); 
+	std::exit(0);
+}
+
 	int main() {
 
 		//prints the ASCII header
@@ -240,7 +246,6 @@ bool screen_command(const std::string& command) {
 				shouldClear = false;
 			}
 		}
-
 		return 0;
 	}
 

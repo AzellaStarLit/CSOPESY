@@ -45,12 +45,6 @@ void clear() {
 	print_header();
 }
 
-void exit_program() {
-	// Exit the screen here
-	//scheduler_stop();
-	std::exit(0);
-}
-
 void initialize() { // intializer logic
 	if (isInitialized) {
 		std::cout << "\033[33mSystem already initialized.\033[0m\n";
