@@ -72,7 +72,13 @@ void RRScheduler::worker_loop(int coreId) {
 
 				std::string instruction = process->getCurrentInstruction();
 				process->execute_instruction(instruction, coreId);
-				std::this_thread::sleep_for(std::chrono::milliseconds(100));
+				//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+				//delay per execution
+				uint32_t delay = getDelayPerExec();
+				if (delay > 0) {
+					std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+				}
 			}
 
 			if (!process->isFinished()) {

@@ -11,6 +11,7 @@ protected:
 	int numCores;
 	bool isRunning;
 	std::queue<Process*> readyQueue;
+	uint32_t delayPerExec = 0; //default value 
 
 public: 
 
@@ -32,4 +33,12 @@ public:
 	}
 
 	virtual Process* get_next_process() = 0; //this will be defined by each algortihm [fcfs or rr]
+
+	void setDelayPerExec(uint32_t delay) {
+		delayPerExec = delay;
+	}
+
+	uint32_t getDelayPerExec() const {
+		return delayPerExec;
+	}
 };

@@ -264,6 +264,9 @@ void exit_program() {
 					return 1;
 				}
 
+				//set the delays per execution for the scheduler
+				scheduler->setDelayPerExec(configManager.getDelaysPerExec());
+
 				//get the processes in process manager then load it to the ready queue
 				auto all = processManager.getAllProcesses();
 				for (auto* p : all) {
