@@ -14,6 +14,7 @@ void FCFSScheduler::start() {
 	for (int i = 0; i < numCores; i++) {
 		workers.emplace_back(&FCFSScheduler::worker_loop, this, i);
 	}
+	std::cout << "FSFC scheduler started\n";
 }
 
 //1 core = 1 process to run

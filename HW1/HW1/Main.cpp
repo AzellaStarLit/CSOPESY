@@ -170,7 +170,7 @@ bool screen_command(const std::string& command) {
 			}
 			
 			std::cout << "\033[32mGenerated " << instructions.size() << " instructions for process '" << name << "'.\033[0m\n";
-			// consoleManager.resume_screen(name);
+			consoleManager.resume_screen(name);
 
 			return true;
 		}
