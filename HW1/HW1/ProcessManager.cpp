@@ -8,7 +8,7 @@
 void ProcessManager::create_process(const std::string& name) {
     if (!exists(name)) {
         processes[name] = Process(name);
-        std::cout << "Process '" << name << "' created.\n";
+        //std::cout << "Process '" << name << "' created.\n";
     }
     else {
         std::cout << "Process '" << name << "' already exists.\n";
