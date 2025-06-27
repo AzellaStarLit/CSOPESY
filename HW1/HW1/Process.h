@@ -42,9 +42,12 @@ public:
 
     //TODO: GENERATE INSTRUCTIONS AND EXECUTE INSTRUCTIONS
     void generate_instructions();
+	std::string generate_rand_instruction();
     void execute_instruction(const std::string& instruction, int coreId);
+    void load_instructions(const std::vector<std::string>& instrs);
 
     void add_instruction(const std::string& instr);
+
     void incrementInstructionPointer();
 
     void run_print(); //used this for the current version

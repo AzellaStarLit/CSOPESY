@@ -10,6 +10,7 @@
 #include <mutex>
 #include <thread>
 #include <algorithm>
+#include <random>
 
 //this is a list of instructions recognized by a process
 std::unordered_map<std::string, std::function<void(const std::string&)>> instructionList;
@@ -71,6 +72,32 @@ void Process::generate_instructions() {
         add_instruction("print: Hello World! from " + name + " [Line " + std::to_string(i + 1) + "]");
         totalLines = instructions.size();
     }
+}
+
+//this will generate random instructions from a predefined set
+std::string Process::generate_rand_instruction() {
+    static const std::string instructions[] = {
+        "PRINT(\"\")",
+        "PRINT(\"Processing...\")",
+        "PRINT(\"We love CSOPESY <3\")",
+    };
+
+    //TODO: EDIT TO READ CONFIGURATION FILE FOR RANGE
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    static std::uniform_int_distribution<> dis(0, sizeof(instructions) - 1);
+
+    return instructions[dis(gen)];
+}
+
+
+void Process::load_instructions(const std::vector<std::string>& instrs) {
+    // Clear existing instructions if needed
+    instructions.clear();
+
+    // Load new instructions
+    instructions = instrs;
+    totalLines = static_cast<uint32_t>(instructions.size());
 }
 
 //------------------EXECUTION------------------//
@@ -135,7 +162,6 @@ void Process::execute_print(const std::string& msg, int coreId) {
 
     std::string printMessage;
 
-    //TODO: UPDATE TO PRINT CORE
     if (msg.empty()) {
         printMessage = "\"Hello world from " + name + "!\"";
     }
@@ -143,19 +169,7 @@ void Process::execute_print(const std::string& msg, int coreId) {
         printMessage = msg + " from " + name;
     }
 
-    //Compose output string
-    std::string output = "(" + timestamp + ") Core: " + std::to_string(coreId) + " " + printMessage;
-
-    //Append to log file
-    std::ofstream logFile("logs/" + name + "_log.txt", std::ios::app);
-    if (logFile.is_open()) {
-        logFile << output << std::endl;
-        logFile.close();
-    }
-    else {
-        std::cerr << "Unable to open log file for writing." << std::endl;
-    }
-
+    //TODO: ADD TO DEAL WITH VARIABLES
 }
 
 void Process::execute_declare(const std::string& args) {

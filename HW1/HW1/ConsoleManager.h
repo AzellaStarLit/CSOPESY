@@ -8,6 +8,7 @@
 class ConsoleManager {
 private:
     std::unordered_map<std::string, Console> screens;
+    std::unordered_map<std::string, Process> processes;
 
 public:
     //when you want to create a process with a screen 

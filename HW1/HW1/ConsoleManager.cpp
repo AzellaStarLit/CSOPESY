@@ -1,10 +1,12 @@
 #include "ConsoleManager.h"
 #include "ProcessManager.h"
 #include <iostream>
+#include <mutex>
 
 extern ProcessManager processManager;
 
 //TODO: I think this should take the number of instructions 
+/*
 void ConsoleManager::create_screen_with_process(const std::string& name) {
     if (screens.find(name) != screens.end()) {
         std::cout << "Screen '" << name << "' already exists. Use 'screen -r' to resume.\n";
@@ -18,6 +20,19 @@ void ConsoleManager::create_screen_with_process(const std::string& name) {
     screens[name] = Console(name, process); //create a console for the process
     screens[name].draw(); //enter screen after creation
 
+}
+*/
+
+void ConsoleManager::create_screen_with_process(const std::string& name) {
+    if (screens.find(name) == screens.end()) {
+        processes[name] = Process(name);
+        screens[name] = Console(name, &processes[name]);
+        std::cout << "Screen + Process '" << name << "' created.\n";
+        screens[name].draw();
+    }
+    else {
+        std::cout << "Screen '" << name << "' already exists. Attaching...\n";
+    }
 }
 
 void ConsoleManager::attach_screen(const std::string& name, Process* process) {
