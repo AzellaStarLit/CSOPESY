@@ -24,6 +24,7 @@ public:
 
 	//add a process in the ready queue
 	virtual void add_process(Process* p) {
+		
 		readyQueue.push(p);
 	}
 

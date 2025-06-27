@@ -18,6 +18,7 @@ public:
 	void stop() override; //stop and join threads
 
 	Process* get_next_process() override;
+	void add_process(Process* p) override;
 
 private:
 	//worker thread loop for each core

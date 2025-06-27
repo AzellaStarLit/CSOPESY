@@ -32,7 +32,7 @@ void FCFSScheduler::worker_loop(int coreId) {
 			readyQueue.pop();
 		}
 
-		if (process) {
+		if (process && !process->isFinished()) {
 			process->setCurrentCore(coreId); //set the current core executing this process
 
 			while (!process->isFinished()) {
@@ -50,9 +50,16 @@ void FCFSScheduler::worker_loop(int coreId) {
 				if (process->getCurrentLine() >= process->getTotalLines()) {
 					process->markFinished();
 				}
+
 			}
 		}
 	}
+}
+
+void FCFSScheduler::add_process(Process* p) {
+	std::lock_guard<std::mutex> lock(queueMutex);
+	readyQueue.push(p);
+	cv.notify_one();
 }
 
 Process* FCFSScheduler::get_next_process() {
