@@ -10,9 +10,11 @@
 
 #include "ProcessManager.h"
 #include "ConsoleManager.h"
+#include "ConfigManager.h"
 
 extern ProcessManager processManager;
 extern ConsoleManager consoleManager;
+extern ConfigManager configManager;
 
 //std::unique_ptr<FCFSScheduler> fcfs = nullptr;
 
@@ -32,9 +34,9 @@ void scheduler_start() {
 	generating = true;
 
 	// Optional: configure from file later
-	const uint32_t minInstructions = 50;
-	const uint32_t maxInstructions = 200;
-	const int interval = 3000;
+	const uint32_t minInstructions = configManager.getMinInstructions();
+	const uint32_t maxInstructions = configManager.getMaxInstructions();
+	const int interval = configManager.getBatchProcessFreq();
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -80,7 +82,7 @@ void scheduler_start() {
 		}
 		});
 
-	std::cout << "Scheduler started. Generating processes...\n";
+	std::cout << "\033[32mScheduler started. Generating processes...\033[0m\n";
 }
 
 void scheduler_stop() {
@@ -91,7 +93,7 @@ void scheduler_stop() {
 
 	// if (scheduler) scheduler->stop();
 
-	std::cout << "Scheduler stopped.\n";
+	std::cout << "\033[32mScheduler stopped.\033[0m\n";
 }
 
 
