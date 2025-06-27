@@ -199,6 +199,7 @@ bool screen_command(const std::string& command) {
 					scheduler->add_process(p);
 				}
 
+				/*
 				// TEST: Manually create 10 processes with 100 instructions
 				for (int i = 1; i <= 10; ++i) {
 					std::string name = "process_" + std::to_string(i);
@@ -210,8 +211,9 @@ bool screen_command(const std::string& command) {
 					scheduler->add_process(p);                           // add to ready queue
 					consoleManager.attach_screen(name, p);          // create screen for the process
 				}
+				*/
 
-				//start the scheduler [whatever was chosen after intialization] 
+				//start the scheduler [whatever was chosen after initialization] 
 				scheduler->start();
 			}
 			else if (command.rfind("screen ", 0) == 0) {

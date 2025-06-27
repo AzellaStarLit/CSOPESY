@@ -60,3 +60,7 @@ void ConsoleManager::resume_screen(const std::string& name) {
 bool ConsoleManager::has_screen(const std::string& name) {
     return screens.find(name) != screens.end();
 }
+
+std::mutex& ConsoleManager::getMutex() {
+    return screenMutex;
+}

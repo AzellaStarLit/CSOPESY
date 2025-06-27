@@ -4,9 +4,11 @@
 #include <string>
 #include "Console.h"
 #include "Process.h"
+#include <mutex>
 
 class ConsoleManager {
 private:
+    mutable std::mutex screenMutex;
     std::unordered_map<std::string, Console> screens;
     std::unordered_map<std::string, Process> processes;
 
@@ -19,4 +21,5 @@ public:
 
     //for screen -r
     void resume_screen(const std::string& name);
+    std::mutex& getMutex();
 };

@@ -3,6 +3,7 @@
 #include <thread>
 #include <chrono>
 #include <iostream>
+#include <random>
 
 #include "SchedulerController.h"
 //INCLUDE RR TOO
@@ -13,22 +14,94 @@
 extern ProcessManager processManager;
 extern ConsoleManager consoleManager;
 
-std::unique_ptr<FCFSScheduler> fcfs = nullptr;
+//std::unique_ptr<FCFSScheduler> fcfs = nullptr;
 
 std::atomic<bool> generating = false;
 std::thread generatorThread; //generates the processes
+
+extern std::unique_ptr<Scheduler> scheduler;
 
 //TODO: GET TICK INTERVAL FROM CONFIG FILE
 //int get_tick_interval() {
 	
 //}
 
-//generates processes every time interval
 void scheduler_start() {
 	if (generating) return;
 
 	generating = true;
-	fcfs->start(); //start fcfs threads
+
+	// Optional: configure from file later
+	const uint32_t minInstructions = 50;
+	const uint32_t maxInstructions = 200;
+	const int interval = 3000;
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> instructionDist(minInstructions, maxInstructions);
+	std::uniform_int_distribution<> messageDist(0, 1); // change based on number of messages
+
+	static const std::string templates[] = {
+		"PRINT(\"Hello world from ",
+		"PRINT(\"We love CSOPESY <3 - ",
+	};
+
+	int counter = 1;
+
+	generatorThread = std::thread([=]() mutable {
+		while (generating) {
+			std::string name = "process_" + std::to_string(counter++);
+
+			{
+				std::scoped_lock lock(processManager.getMutex(), consoleManager.getMutex());
+
+				processManager.create_process(name);
+				Process* p = processManager.get_process(name);
+
+				if (p) {
+					int numInstructions = instructionDist(gen);
+					std::vector<std::string> instructions;
+					for (int i = 0; i < numInstructions; ++i) {
+						std::string base = templates[messageDist(gen)];
+						instructions.push_back(base + name + "!\")");
+					}
+
+					p->load_instructions(instructions);
+					consoleManager.attach_screen(name, p);
+
+					// Add process to scheduler!
+					if (scheduler) {
+						scheduler->add_process(p);
+					}
+				}
+			}
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+		}
+		});
+
+	std::cout << "Scheduler started. Generating processes...\n";
+}
+
+void scheduler_stop() {
+	if (!generating) return;
+
+	generating = false;
+	if (generatorThread.joinable()) generatorThread.join();
+
+	// if (scheduler) scheduler->stop();
+
+	std::cout << "Scheduler stopped.\n";
+}
+
+
+//generates processes every time interval
+/*
+void scheduler_start() {
+	if (generating) return;
+
+	generating = true;
+	//fcfs->start(); //start fcfs threads
 
 	int interval = 5000; //I put this here for testing only
 	int counter = 1;
@@ -43,7 +116,7 @@ void scheduler_start() {
 				p->add_instruction("print"); //should be randomized from list of all recognized instructions
 			}
 
-			fcfs->add_process(p); //add the processes to the scheduler
+			//fcfs->add_process(p); //add the processes to the scheduler
 			processManager.create_process(p->getName());
 			consoleManager.attach_screen(name, p); //auto attach a screen to the process
 
@@ -65,3 +138,4 @@ void scheduler_stop() {
 	fcfs->stop();
 	std::cout << "Scheduler stopped.\n";
 }
+*/
