@@ -97,7 +97,7 @@ void report_util() { // report-util logic
 		} else {
 			outfile << std::left << std::setw(20) << "Name"
 			        << std::setw(25) << "Creation Time"
-			        << "Completioin Time\n";
+			        << "Completion Time\n";
 			outfile << std::string(60, '-') << "\n";
 			for (auto proc : finished) {
 				outfile << std::left << std::setw(20) << proc->getName()
