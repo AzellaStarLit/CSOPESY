@@ -29,7 +29,7 @@ Once you launch the program, you will land on the **Menu Screen**. You have to e
             <li>
                   **process-smi** - view the current instruction list
                   **exit** - return to main menu
-            <li>
+                  </li>
 **screen-ls** - lists running and finished processes.
 **report-util** - generates a log file with the same process details shown in **screen -ls**.
 **marquee** - switch to marquee console. **exit** to go back to the main menu.
