@@ -41,7 +41,7 @@ void scheduler_start() {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> instructionDist(minInstructions, maxInstructions);
-	std::uniform_int_distribution<> messageDist(0, 1); // change based on number of messages
+	std::uniform_int_distribution<> messageDist(0, 11); // change based on number of messages
 
 	static const std::string templates[] = {
 		"PRINT(\"Hello world from ",
