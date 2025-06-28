@@ -27,6 +27,7 @@ This is where the program loop will be running unless the user exits.
 #include "SchedulerController.h"
 #include "ConfigManager.h"
 #include "marqueeConsole.h"
+#include "sharedState.h"
 
 
 
@@ -68,6 +69,12 @@ bool screen_command(const std::string& command) {
 		for (auto* p : allProcesses) {
 			(p->isFinished() ? finished : running).push_back(p);
 		}
+
+		auto [used, available, util] = scheduler->getCPUUtilization();
+		std::cout << "CPU utilization: " << util << "%\n";
+		std::cout << "Cores used: " << used << "\n";
+		std::cout << "Cores available: " << available << "\n";
+
 
 		std::cout << "RUNNING PROCESSES: \n";
 		if (running.empty()) {

@@ -65,6 +65,10 @@ void RRScheduler::worker_loop(int coreId) {
 		}
 
 		if (process && !process->isFinished()) {
+			{
+				std::lock_guard<std::mutex> statsLock(statsMutex);
+				coreActive[coreId] = true;
+			}
 			process->setCurrentCore(coreId);
 
 			for (int i = 0;  i < timeQuantum; ++i) {
@@ -86,6 +90,11 @@ void RRScheduler::worker_loop(int coreId) {
 			}
 			else {
 				process->markFinished();
+			}
+
+			{
+				std::lock_guard<std::mutex> statsLock(statsMutex);
+				coreActive[coreId] = false;
 			}
 		}
 	}

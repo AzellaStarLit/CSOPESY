@@ -33,6 +33,12 @@ void FCFSScheduler::worker_loop(int coreId) {
 		}
 
 		if (process && !process->isFinished()) {
+
+			{
+				std::lock_guard<std::mutex> statsLock(statsMutex);
+				coreActive[coreId] = true; // mark this core as active
+			}
+
 			process->setCurrentCore(coreId); //set the current core executing this process
 
 			while (!process->isFinished()) {
@@ -51,6 +57,11 @@ void FCFSScheduler::worker_loop(int coreId) {
 					process->markFinished();
 				}
 
+			}
+
+			{
+				std::lock_guard<std::mutex> statsLock(statsMutex);
+				coreActive[coreId] = false; // mark this core as available
 			}
 		}
 	}

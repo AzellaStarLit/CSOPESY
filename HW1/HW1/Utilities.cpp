@@ -2,6 +2,8 @@
 #include "ProcessManager.h"
 #include "FCFS.h"
 #include "ConfigManager.h"
+#include "BaseScheduler.h"
+#include "sharedState.h"
 
 #include <iostream>
 #include <cstdlib>
@@ -84,6 +86,11 @@ void report_util() { // report-util logic
 			if (proc->isFinished()) finished.push_back(proc);
 			else running.push_back(proc);
 		}
+
+		auto [used, available, util] = scheduler->getCPUUtilization();
+		outfile << "CPU utilization: " << util << "%\n";
+		outfile << "Cores used: " << used << "\n";
+		outfile << "Cores available: " << available << "\n";
 
 		outfile << "RUNNING PROCESSES:\n";
 		if (running.empty()) {

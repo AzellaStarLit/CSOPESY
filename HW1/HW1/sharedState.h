@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <mutex>
+#include <memory>
+#include "BaseScheduler.h"
 
 inline std::mutex screenMutex;
 inline std::string sharedInputBuffer;
@@ -8,6 +10,8 @@ inline std::string sharedInputBuffer;
 inline std::vector<std::string> sharedCommandHistory;
 inline int refresh_rate = 33;
 inline int polling_rate = 80;
+
+extern std::unique_ptr<Scheduler> scheduler;
 
 /*
 100ms [10 fps] - not smooth
