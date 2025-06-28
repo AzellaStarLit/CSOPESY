@@ -25,7 +25,7 @@ private:
     std::unordered_map<std::string, uint16_t> symbolTable; // variable storage
 
     void setTimestamp(); 
-    void execute_print(const std::string& msg, int coreId); //temporary since we only execute print for now
+    void execute_print(const std::string& msg, int coreId); 
     void execute_declare(const std::string& args);
     void execute_add(const std::string& args);
     void execute_subtract(const std::string& args);
@@ -43,11 +43,10 @@ public:
     //TODO: GENERATE INSTRUCTIONS AND EXECUTE INSTRUCTIONS
     void generate_instructions();
 	std::string generate_rand_instruction();
+
     void execute_instruction(const std::string& instruction, int coreId);
     void load_instructions(const std::vector<std::string>& instrs);
-
     void add_instruction(const std::string& instr);
-
     void incrementInstructionPointer();
 
     void run_print(); //used this for the current version

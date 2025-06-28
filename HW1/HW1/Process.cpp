@@ -40,6 +40,7 @@ Process::Process()
     //so far, we only have print
     instructionList["PRINT"] = [this](const std::string& msg) {
         execute_print(msg, -1); };
+    symbolTable["x"] = 0;
 }
 
 Process::Process(const std::string& name)
@@ -47,6 +48,7 @@ Process::Process(const std::string& name)
     setTimestamp();
 	instructionList["PRINT"] = [this](const std::string& msg) { 
         execute_print(msg, -1); };
+    symbolTable["x"] = 0;
 }
 
 Process::Process(const std::string& name, int instructionCount)
@@ -54,6 +56,7 @@ Process::Process(const std::string& name, int instructionCount)
     setTimestamp();
     instructionList["PRINT"] = [this](const std::string& msg) {
         execute_print(msg, -1); };
+    symbolTable["x"] = 0;
 }
 
 
@@ -171,7 +174,36 @@ void Process::execute_print(const std::string& msg, int coreId) {
         printMessage = "\"Hello world from " + name + "!\"";
     }
     else {
-        printMessage = msg + " from " + name;
+        std::string processedMsg = msg;
+
+        // Look for a "+" indicating string + variable (basic pattern only)
+        size_t plusPos = msg.find('+');
+        if (plusPos != std::string::npos) {
+            std::string strPart = msg.substr(0, plusPos);
+            std::string varPart = msg.substr(plusPos + 1);
+
+            // Trim whitespace from varPart
+            varPart.erase(0, varPart.find_first_not_of(" \t"));
+            varPart.erase(varPart.find_last_not_of(" \t") + 1);
+
+            // Remove quotes from strPart if they exist
+            if (!strPart.empty() && strPart.front() == '\"' && strPart.back() == '\"') {
+                strPart = strPart.substr(1, strPart.size() - 2);
+            }
+
+            // Look up variable in symbolTable
+            std::string varValue = "undefined";
+            auto it = symbolTable.find(varPart);
+            if (it != symbolTable.end()) {
+                varValue = std::to_string(it->second);
+            }
+
+            printMessage = strPart + varValue + " from " + name;
+        }
+        else {
+            printMessage = msg + " from " + name;
+        }
+
     }
 
     std::string logEntry = "[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " PRINT: " + printMessage;
