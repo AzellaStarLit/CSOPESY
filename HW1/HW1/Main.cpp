@@ -168,7 +168,7 @@ bool screen_command(const std::string& command) {
 		}*/
 
 		std::vector<std::string> instructions;
-		instructions.push_back("DECLARE(x, 0)");
+		//instructions.push_back("DECLARE(x, 0)");
 
 		for (int i = 0; i < numInstructions / 2; ++i) {
 			instructions.push_back("PRINT(\"Value from: \" + x)");

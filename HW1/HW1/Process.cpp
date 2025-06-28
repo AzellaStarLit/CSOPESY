@@ -198,7 +198,7 @@ void Process::execute_print(const std::string& msg, int coreId) {
                 varValue = std::to_string(it->second);
             }
 
-            printMessage = strPart + varValue + " from " + name;
+            printMessage = varValue + " from " + name;
         }
         else {
             printMessage = msg + " from " + name;
@@ -257,7 +257,8 @@ void Process::execute_add(const std::string& args) {
     if (result > 65535) result = 65535;
 
     symbolTable[var1] = static_cast<uint16_t>(result);
-    log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " ADD: " + var1 + " = " + std::to_string(symbolTable[var1]));
+    log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " ADD: " + var1 + " = " + std::to_string(result));
+	symbolTable[var1] = static_cast<uint16_t>(result);
 }
 
 void Process::execute_subtract(const std::string& args) {
