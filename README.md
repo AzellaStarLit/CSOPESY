@@ -1,4 +1,14 @@
 # CSOPESY
+## Authors: 
+ALABAT, Jeanne Hazel
+
+ASTRERO, Dwight Daryl
+
+DE CASTRO, Phoenix Claire
+
+LABARRETE, Lance Desmond
+
+## HOW TO RUN
 
 Welcome to our CSOPESY OS Emulator! This CLI-based emulator simulates CPU scheduling and process management. 
 
