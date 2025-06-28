@@ -174,7 +174,7 @@ void Process::execute_print(const std::string& msg, int coreId) {
         printMessage = msg + " from " + name;
     }
 
-    std::string logEntry = "[" + timestamp + "] PRINT: " + printMessage;
+    std::string logEntry = "[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " PRINT: " + printMessage;
     log.push_back(logEntry);
 
     //TODO: ADD TO DEAL WITH VARIABLES
@@ -185,7 +185,7 @@ void Process::execute_declare(const std::string& args) {
     std::string timestamp = get_current_timestamp();
     if (comma == std::string::npos) {
         //std::cerr << "Invalid DECLARE format: " << args << "\n";
-        log.push_back("[" + timestamp + "] DECLARE: Invalid format: " + args);
+        log.push_back("[" + timestamp + "] Core "+ std::to_string(getCurrentCore()) + "DECLARE: Invalid format: " + args);
         return;
     }
 
@@ -196,10 +196,10 @@ void Process::execute_declare(const std::string& args) {
         uint32_t value = std::stoul(valStr);
         if (value > 65535) value = 65535; 
         symbolTable[var] = static_cast<uint16_t>(value);
-        log.push_back("[" + timestamp + "] DECLARE: " + var + " = " + std::to_string(value));
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " DECLARE: " + var + " = " + std::to_string(value));
     } catch (...) {
         //std::cerr << "Invalid value in DECLARE: " << args << "\n";
-        log.push_back("[" + timestamp + "] DECLARE: Invalid value in '" + args + "'");
+        log.push_back("[" + timestamp + "] Core "+ std::to_string(getCurrentCore()) + " DECLARE: Invalid value in '" + args + "'");
     }
 }
 
@@ -225,7 +225,7 @@ void Process::execute_add(const std::string& args) {
     if (result > 65535) result = 65535;
 
     symbolTable[var1] = static_cast<uint16_t>(result);
-    log.push_back("[" + timestamp + "] ADD: " + var1 + " = " + std::to_string(symbolTable[var1]));
+    log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " ADD: " + var1 + " = " + std::to_string(symbolTable[var1]));
 }
 
 void Process::execute_subtract(const std::string& args) {
@@ -250,19 +250,19 @@ void Process::execute_subtract(const std::string& args) {
     if (result < 0) result = 0;
 
     symbolTable[var1] = static_cast<uint16_t>(result);
-    log.push_back("[" + timestamp + "] SUBTRACT: " + var1 + " = " + std::to_string(symbolTable[var1]));
+    log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " SUBTRACT: " + var1 + " = " + std::to_string(symbolTable[var1]));
 }
 
 void Process::execute_sleep(const std::string& msString) {
     std::string timestamp = get_current_timestamp();
     try {
         int ms = std::stoi(msString);
-        log.push_back("[" + timestamp + "] SLEEP: Sleeping for " + std::to_string(ms) + " ms");
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + "SLEEP: Sleeping for " + std::to_string(ms) + " ms");
         std::this_thread::sleep_for(std::chrono::milliseconds(ms));
     }
     catch (const std::exception& e) {
         //std::string err = "Invalid sleep duration: " + msString;
-        log.push_back("[" + timestamp + "] SLEEP: Invalid duration: " + msString);
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " SLEEP: Invalid duration : " + msString);
     }
 }
 
@@ -271,7 +271,7 @@ void Process::execute_for(const std::string& args, int coreId, int nestingLevel)
 
     if (nestingLevel > 3) {
         //std::cerr << "Exceeded maximum FOR loop nesting level.\n";
-        log.push_back("[" + timestamp + "] FOR: Nesting limit exceeded.");
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + "FOR: Nesting limit exceeded.");
         return;
     }
 
@@ -281,7 +281,7 @@ void Process::execute_for(const std::string& args, int coreId, int nestingLevel)
 
     if (openBracket == std::string::npos || closeBracket == std::string::npos) {
         //std::cerr << "Invalid FOR loop format: missing brackets.\n";
-        log.push_back("[" + timestamp + "] FOR: Invalid format - missing brackets.");
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " FOR: Invalid format - missing brackets.");
         return;
     }
 
@@ -293,7 +293,7 @@ void Process::execute_for(const std::string& args, int coreId, int nestingLevel)
         repeatCount = std::stoi(repeatStr);
     } catch (...) {
         //std::cerr << "Invalid repeat count in FOR: " << repeatStr << "\n";
-        log.push_back("[" + timestamp + "] FOR: Invalid repeat count '" + repeatStr + "'");
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " FOR: Invalid repeat count '" + repeatStr + "'");
         return;
     }
 
