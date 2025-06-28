@@ -153,15 +153,27 @@ bool screen_command(const std::string& command) {
 		std::mt19937 gen(rd());
 		std::uniform_int_distribution<> instructionCountDist(minInstructions, maxInstructions);
 		std::uniform_int_distribution<> templateIndexDist(0, sizeof(templates) / sizeof(templates[0]) - 1);
+		std::uniform_int_distribution<> addValueDist(1, 10);
 
 		// Generate random number of instructions
 		int numInstructions = instructionCountDist(gen);
+		if (numInstructions % 2 != 0) ++numInstructions;
 
 		// Create instructions vector
+		/*
 		std::vector<std::string> instructions;
 		for (int i = 0; i < numInstructions; ++i) {
 			std::string instr = templates[templateIndexDist(gen)];
 			instructions.push_back(instr);
+		}*/
+
+		std::vector<std::string> instructions;
+		instructions.push_back("DECLARE(x, 0)");
+
+		for (int i = 0; i < numInstructions / 2; ++i) {
+			instructions.push_back("PRINT(\"Value from: \" + x)");
+			int randAdd = addValueDist(gen);
+			instructions.push_back("ADD(x, x, " + std::to_string(randAdd) + ")");
 		}
 
 		// Create the process and load instructions
