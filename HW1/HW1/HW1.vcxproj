@@ -24,6 +24,7 @@
     <ProjectGuid>{697bfe1c-5fb8-4895-8402-7ad71b41a14a}</ProjectGuid>
     <RootNamespace>HW1</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>CSOPESY_GRP10_MCO1</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -134,21 +135,34 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ConfigManager.cpp" />
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="ConsoleManager.cpp" />
     <ClCompile Include="FCFS.cpp" />
-    <ClCompile Include="menu_screen.cpp" />
+    <ClCompile Include="kpThread.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="marqueeConsole.cpp" />
+    <ClCompile Include="marqueeThread.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessManager.cpp" />
+    <ClCompile Include="RR.cpp" />
+    <ClCompile Include="SchedulerControllercpp.cpp" />
     <ClCompile Include="Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ConfigManager.h" />
     <ClInclude Include="Console.h" />
     <ClInclude Include="ConsoleManager.h" />
     <ClInclude Include="FCFS.h" />
-    <ClInclude Include="Header.h" />
+    <ClInclude Include="BaseScheduler.h" />
+    <ClInclude Include="kpThread.h" />
+    <ClInclude Include="marqueeConsole.h" />
+    <ClInclude Include="marqueeThread.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="ProcessManager.h" />
+    <ClInclude Include="RR.h" />
+    <ClInclude Include="SchedulerController.h" />
+    <ClInclude Include="sharedState.h" />
     <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
