@@ -27,7 +27,7 @@ void ConsoleManager::create_screen_with_process(const std::string& name) {
     if (screens.find(name) == screens.end()) {
         processes[name] = Process(name);
         screens[name] = Console(name, &processes[name]);
-        std::cout << "Screen + Process '" << name << "' created.\n";
+        //std::cout << "Screen + Process '" << name << "' created.\n";
         screens[name].draw();
     }
     else {
@@ -42,7 +42,7 @@ void ConsoleManager::attach_screen(const std::string& name, Process* process) {
     }
 
     screens[name] = Console(name, process); //create and attach console to process
-    std::cout << "Attached screen to process '" << name << "'.\n";
+    //std::cout << "Attached screen to process '" << name << "'.\n";
 }
 
 

@@ -41,20 +41,20 @@ void scheduler_start() {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> instructionDist(minInstructions, maxInstructions);
-	std::uniform_int_distribution<> messageDist(0, 11); // change based on number of messages
+	std::uniform_int_distribution<> messageDist(0, 10); // change based on number of messages
 
 	static const std::string templates[] = {
-		"PRINT(\"Hello world from ",
-		"PRINT(\"We love CSOPESY <3 - ",
-		"DECLARE(var_x, 0)",
-		"DECLARE(var_y, 5)",
-		"ADD(var_z, var_x, var_y)",
-		"SUBTRACT(var_a, var_y, var_x)",
-		"SLEEP(3)",
-		"SLEEP(2)",
-		"FOR([PRINT(\"Looping inside process\")], 2)",
-		"FOR([ADD(var_i, var_x, 1)], 2)",
-		"FOR([SUBTRACT(var_j, var_y, 1)], 2)",
+			"DECLARE(var_x, 0)",
+			"DECLARE(var_y, 5)",
+			"ADD(var_z, var_x, var_y)",
+			"SUBTRACT(var_a, var_y, var_x)",
+			"SLEEP(300)",
+			"SLEEP(2000)",
+			"FOR([PRINT(\"Looping inside process\")], 2)",
+			"FOR([ADD(var_i, var_x, 1)], 2)",
+			"FOR([SUBTRACT(var_j, var_y, 1)], 2)",
+			"PRINT(\"Hello world from process\")",
+			"PRINT(\"We love CSOPESY <3\")"
 	};
 
 	int counter = 1;
@@ -74,7 +74,7 @@ void scheduler_start() {
 					std::vector<std::string> instructions;
 					for (int i = 0; i < numInstructions; ++i) {
 						std::string base = templates[messageDist(gen)];
-						instructions.push_back(base + name + "!\")");
+						instructions.push_back(base);
 					}
 
 					p->load_instructions(instructions);

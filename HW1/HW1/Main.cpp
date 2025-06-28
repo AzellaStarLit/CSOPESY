@@ -247,8 +247,6 @@ void exit_program() {
 
 		while (true) {
 
-			//TODO: CHECK IF THE OS IS INITIALIZED BEFORE RECOGNIZING ANY COMMAND
-			
 			//get the user input
 			std::cout << "> ";
 			std::getline(std::cin, command);
