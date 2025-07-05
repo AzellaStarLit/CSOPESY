@@ -9,9 +9,11 @@
 
 class Process {
 private:
+	size_t pid;
     std::string name;
     std::string creationTimestamp;
     std::string completionTimestamp;
+	size_t memorySize;
 
     int instructionPointer; //stores the current line being executed
     int totalLines; 

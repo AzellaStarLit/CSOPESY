@@ -143,6 +143,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="marqueeConsole.cpp" />
     <ClCompile Include="marqueeThread.cpp" />
+    <ClCompile Include="MemoryManager.cpp" />
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessManager.cpp" />
     <ClCompile Include="RR.cpp" />
@@ -158,6 +159,7 @@
     <ClInclude Include="kpThread.h" />
     <ClInclude Include="marqueeConsole.h" />
     <ClInclude Include="marqueeThread.h" />
+    <ClInclude Include="MemoryManager.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="ProcessManager.h" />
     <ClInclude Include="RR.h" />

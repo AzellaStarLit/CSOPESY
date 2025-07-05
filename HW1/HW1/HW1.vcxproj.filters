@@ -45,7 +45,16 @@
     <ClCompile Include="ConfigManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SchedulerManager.cpp">
+    <ClCompile Include="kpThread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="marqueeConsole.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="marqueeThread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MemoryManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -80,7 +89,19 @@
     <ClInclude Include="ConfigManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SchedulerManager.h">
+    <ClInclude Include="kpThread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="marqueeConsole.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="marqueeThread.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sharedState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MemoryManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
