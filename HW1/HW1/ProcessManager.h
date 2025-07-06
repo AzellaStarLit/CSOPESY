@@ -28,7 +28,6 @@ public:
     size_t get_process_count() const;
 
     //for scheduler start
-    //void generate_processes(int numProcesses, int instructionsPerProcess, ConsoleManager& consoleManager);
     std::string generate_rand_instruction();
     void generate_instructions(const std::string& processName, ConsoleManager& consoleManager);
 

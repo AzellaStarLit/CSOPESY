@@ -39,28 +39,6 @@ bool ProcessManager::exists(const std::string& name) const {
     return processes.find(name) != processes.end();
 }
 
-//generate multiple dummy processes with x number of instructions
-/*
-void ProcessManager::generate_processes(int numProcesses, int instructionsPerProcess, ConsoleManager& consoleManager) {
-    for (int i = 0; i < numProcesses; ++i) {
-        std::string processName = "process_" + std::to_string(i + 1);
-        Process process(processName);
-
-		std::cout << "Generating instructions for " << processName << "...\n";
-
-        for (int j = 0; j < instructionsPerProcess; ++j) {
-            process.add_instruction("print: Hello from " + processName + " [Line " + std::to_string(j + 1) + "]");
-        }
-
-        processes[processName] = process;
-        consoleManager.attach_screen(processName, &process);
-    }
-
-    std::cout << "\033[32mGenerated " << numProcesses << " processes with "
-        << instructionsPerProcess << " instructions each.\033[0m\n";
-}
-*/
-
 void ProcessManager::generate_instructions(const std::string& processName, ConsoleManager& consoleManager) {
     //std::lock_guard<std::mutex> lock(processMutex);
     std::random_device rd;

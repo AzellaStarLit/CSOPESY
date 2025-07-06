@@ -183,18 +183,6 @@ bool screen_command(const std::string& command) {
 
 			return true;
 		}
-
-		// Add process to scheduler!
-
-		/*
-		if (processManager.exists(name)) {
-			std::cout << "Process '" << name << "' already exists. Use 'screen -r " << name << "' to resume.\n";
-			return false;
-		}
-
-		consoleManager.create_screen_with_process(name); 
-		return true;
-		*/
 	}
 		
 
