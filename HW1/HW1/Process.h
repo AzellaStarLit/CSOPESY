@@ -9,7 +9,7 @@
 
 class Process {
 private:
-	size_t pid;
+	//size_t pid;
     std::string name;
     std::string creationTimestamp;
     std::string completionTimestamp;
@@ -41,6 +41,8 @@ public:
 	Process(); //default
 	Process(const std::string& name); //when a process is given a name
     Process(const std::string& name, int instructionCount); //when a process is given a name and instruction count
+    Process(const std::string& name, size_t memory);
+
 
     //TODO: GENERATE INSTRUCTIONS AND EXECUTE INSTRUCTIONS
     void generate_instructions();
@@ -52,6 +54,7 @@ public:
 
     void incrementInstructionPointer();
 
+	//TODO: Clean up unused functions
     void run_print(); //used this for the current version
     void show_log() const; //logs
     void show_symbol_table() const;

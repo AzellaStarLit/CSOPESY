@@ -34,28 +34,24 @@ void Process::setCompletionTimestamp(){
 //------------------CONSTRUCTORS------------------//
 
 Process::Process()
-    : name("default"), instructionPointer(0), totalLines(0) {
-    setTimestamp();
-
-    //so far, we only have print
-    instructionList["PRINT"] = [this](const std::string& msg) {
-        execute_print(msg, -1); };
+    : name("default"), instructionPointer(0), totalLines(0), memorySize(0),
+    creationTimestamp(get_current_timestamp()) {
 }
 
 Process::Process(const std::string& name)
-    : name(name), instructionPointer(0), totalLines(0) {
-    setTimestamp();
-	instructionList["PRINT"] = [this](const std::string& msg) { 
-        execute_print(msg, -1); };
+    : name(name), instructionPointer(0), totalLines(0), memorySize(0),
+    creationTimestamp(get_current_timestamp()) {
 }
 
 Process::Process(const std::string& name, int instructionCount)
-    : name(name), instructionPointer(0), totalLines(instructionCount) {
-    setTimestamp();
-    instructionList["PRINT"] = [this](const std::string& msg) {
-        execute_print(msg, -1); };
+    : name(name), instructionPointer(0), totalLines(instructionCount), memorySize(0),
+    creationTimestamp(get_current_timestamp()) {
 }
 
+Process::Process(const std::string& name, size_t memory)
+    : name(name), instructionPointer(0), totalLines(0), memorySize(memory),
+    creationTimestamp(get_current_timestamp()) {
+}
 
 //------------------INSTRUCTIONS------------------//
 

@@ -33,10 +33,14 @@ void scheduler_start() {
 
 	generating = true;
 
-	// Optional: configure from file later
+	// Configure from file 
 	const uint32_t minInstructions = configManager.getMinInstructions();
 	const uint32_t maxInstructions = configManager.getMaxInstructions();
 	const int interval = configManager.getBatchProcessFreq();
+
+	//TODO: Read from config file
+	//Configuration for memory
+	const size_t memPerProcess = 4096;
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -66,7 +70,7 @@ void scheduler_start() {
 			{
 				std::scoped_lock lock(processManager.getMutex(), consoleManager.getMutex());
 
-				processManager.create_process(name);
+				processManager.create_process(name, memPerProcess);
 				Process* p = processManager.get_process(name);
 
 				if (p) {

@@ -4,11 +4,13 @@
 #include <iostream>
 
 
-MemoryManager::MemoryManager() {
-    // Initialize memory frames
+MemoryManager::MemoryManager(size_t maxMem, size_t frameSz)
+    : maxMemorySize(maxMem),
+    frameSize(frameSz),
+    numFrames(maxMem / frameSz)
+{
     memory.resize(numFrames);
 
-    // Initialize all frames as free
     for (size_t i = 0; i < numFrames; ++i) {
         freeFrames.push_back(i);
     }

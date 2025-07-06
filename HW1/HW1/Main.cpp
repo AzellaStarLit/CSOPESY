@@ -12,11 +12,13 @@ This is where the program loop will be running unless the user exits.
 
 #include <iostream>
 #include <string>
-#include <unordered_map>std::unordered_map<std::string, Process> processes;#include <ctime>
+#include <unordered_map>
+
 #include <iomanip>
 #include <sstream>
 #include <fstream>
 #include <random>
+#include <ctime>
 
 #include "Utilities.h"
 #include "Console.h"
@@ -34,7 +36,7 @@ This is where the program loop will be running unless the user exits.
 ProcessManager processManager;
 ConsoleManager consoleManager;
 ConfigManager configManager;
-
+std::unordered_map<std::string, Process> processes; 
 
 std::unique_ptr<Scheduler> scheduler; 
 bool isInitialized = false;

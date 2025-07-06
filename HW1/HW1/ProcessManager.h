@@ -17,6 +17,7 @@ private:
 
 public:
     void create_process(const std::string& name);
+    void create_process(const std::string& name, size_t processMemory);
 
     Process* get_process(const std::string& name);
     bool exists(const std::string& name) const;

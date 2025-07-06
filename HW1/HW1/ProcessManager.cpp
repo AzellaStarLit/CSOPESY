@@ -15,6 +15,16 @@ void ProcessManager::create_process(const std::string& name) {
     }
 }
 
+void ProcessManager::create_process(const std::string& name, size_t processMemory) {
+    if (!exists(name)) {
+        processes[name] = Process(name, processMemory);
+        //std::cout << "Process '" << name << "' created.\n";
+    }
+    else {
+        std::cout << "Process '" << name << "' already exists.\n";
+    }
+}
+
 //retrieve a process by name
 Process* ProcessManager::get_process(const std::string& name) {
     auto it = processes.find(name);
