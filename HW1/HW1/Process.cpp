@@ -51,6 +51,9 @@ Process::Process(const std::string& name, int instructionCount)
 Process::Process(const std::string& name, size_t memory)
     : name(name), instructionPointer(0), totalLines(0), memorySize(memory),
     creationTimestamp(get_current_timestamp()) {
+
+    //for debugging
+	std::cout << "Process created with name: " << name << " and memory size: " << memory << std::endl;
 }
 
 //------------------INSTRUCTIONS------------------//
