@@ -14,6 +14,10 @@ public:
     unsigned int getMaxInstructions() const { return maxInstructions; }
     unsigned int getDelaysPerExec() const { return delaysPerExec; }
 
+    unsigned int getMaxOverallMem() const { return maxOverallMem; }
+    unsigned int getMemPerFrame() const { return memPerFrame; }
+    unsigned int getMemPerProc() const { return memPerProc; }
+
 private:
     int numCPU;
     std::string scheduler;
@@ -22,4 +26,8 @@ private:
     unsigned int minInstructions;
     unsigned int maxInstructions;
     unsigned int delaysPerExec;
+
+    unsigned int maxOverallMem;
+    unsigned int memPerFrame;
+    unsigned int memPerProc;
 }; 
