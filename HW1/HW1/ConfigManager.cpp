@@ -20,6 +20,10 @@ bool ConfigManager::loadFromFile(const std::string& filename) {
         {"min-ins", [this](const std::string& val) { minInstructions = std::stoul(val); }},
         {"max-ins", [this](const std::string& val) { maxInstructions = std::stoul(val); }},
         {"delays-per-exec", [this](const std::string& val) { delaysPerExec = std::stoul(val); }}
+        // New configurations
+        {"max-overall-mem", [this](const std::string& val) { maxOverallMem = std::stoul(val); }},
+        {"mem-per-frame", [this](const std::string& val) { memPerFrame = std::stoul(val); }},
+        {"mem-per-proc", [this](const std::string& val) { memPerProc = std::stoul(val); }},
     };
 
     std::string line;
