@@ -27,4 +27,10 @@ public:
 
     bool allocateFrames(size_t numFrames, size_t processId, const std::vector<size_t>& pageSize);
     void deallocateFrames(size_t numFrames, size_t frameIndex, const std::vector<size_t>& pageSize);
+
+    //get start frame of process
+    size_t getProcessStartFrame(int processId) const;
+
+    //debug
+    void printMemoryMap() const; 
 };

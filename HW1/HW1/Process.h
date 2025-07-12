@@ -10,6 +10,8 @@
 class Process {
 private:
 	//size_t pid;
+    static int global_pid_counter;
+    int processId = 0;
     std::string name;
     std::string creationTimestamp;
     std::string completionTimestamp;
@@ -40,7 +42,7 @@ public:
     //constructors
 	Process(); //default
 	Process(const std::string& name); //when a process is given a name
-    Process(const std::string& name, int instructionCount); //when a process is given a name and instruction count
+    Process(const std::string& name, int instructionCount, int pid); //when a process is given a name and instruction count
     Process(const std::string& name, size_t memory);
 
 
@@ -69,6 +71,9 @@ public:
     std::string getCreationTimestamp() const { return creationTimestamp; }
     std::string getCompletionTimestamp() const { return completionTimestamp; }
     std::string get_current_timestamp() const;
+    void setPID(int pid) { this->processId = pid; }
+    int getPID() const { return processId; }
+
 
     void setCompletionTimestamp();
     void setCurrentCore(int core) { currentCoreId = core; }

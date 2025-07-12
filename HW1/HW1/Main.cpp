@@ -30,7 +30,7 @@ This is where the program loop will be running unless the user exits.
 #include "ConfigManager.h"
 #include "marqueeConsole.h"
 #include "sharedState.h"
-
+#include "MemoryManager.h"
 
 
 ProcessManager processManager;
@@ -40,6 +40,8 @@ std::unordered_map<std::string, Process> processes;
 
 std::unique_ptr<Scheduler> scheduler; 
 bool isInitialized = false;
+
+//MemoryManager memoryManager;
 
 // Global functions for initialization
 void print_header();
@@ -253,6 +255,15 @@ void exit_program() {
 				int cores = configManager.getNumCPU();
 				std::string algo = configManager.getScheduler();
 				int quantum = configManager.getQuantumCycles();
+				MemoryManager memoryManager (
+					configManager.getMaxOverallMem(),
+					configManager.getMemPerFrame()
+					);
+
+				size_t memPerProc = configManager.getMemPerProc();
+				size_t memPerFrame = configManager.getMemPerFrame();
+
+				std::cout << "mem-per-frame: " << memPerFrame << "\n"; 
 
 				//sanitize the algorithm string
 				if (!algo.empty() && algo.front() == '"' && algo.back() == '"') {
@@ -264,7 +275,9 @@ void exit_program() {
 					scheduler = std::make_unique<FCFSScheduler>(cores);
 				}
 				else if (algo == "rr") {
-					scheduler = std::make_unique<RRScheduler>(cores, quantum);
+					scheduler = std::make_unique<RRScheduler>(cores, quantum, memPerProc, memPerFrame);
+					dynamic_cast<RRScheduler*>(scheduler.get())->setMemoryManager(&memoryManager);
+
 				}
 				else {
 					std::cerr << "Unknown algorithm\n";

@@ -14,6 +14,7 @@
 
 //this is a list of instructions recognized by a process
 std::unordered_map<std::string, std::function<void(const std::string&)>> instructionList;
+int Process::global_pid_counter = 1; // Start PID from 1
 
 void Process::setTimestamp() {
     std::time_t now = std::time(nullptr);
@@ -35,26 +36,24 @@ void Process::setCompletionTimestamp(){
 
 Process::Process()
     : name("default"), instructionPointer(0), totalLines(0), memorySize(0),
-    creationTimestamp(get_current_timestamp()) {
-}
+    creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {}
 
 Process::Process(const std::string& name)
     : name(name), instructionPointer(0), totalLines(0), memorySize(0),
-    creationTimestamp(get_current_timestamp()) {
-}
+    creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {}
 
-Process::Process(const std::string& name, int instructionCount)
-    : name(name), instructionPointer(0), totalLines(instructionCount), memorySize(0),
+Process::Process(const std::string& name, int instructionCount, int pid)
+    : name(name), instructionPointer(0), totalLines(instructionCount), memorySize(0), processId(pid),
     creationTimestamp(get_current_timestamp()) {
 }
 
 Process::Process(const std::string& name, size_t memory)
     : name(name), instructionPointer(0), totalLines(0), memorySize(memory),
-    creationTimestamp(get_current_timestamp()) {
+    creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {
 
-    //for debugging
-	std::cout << "Process created with name: " << name << " and memory size: " << memory << std::endl;
+    std::cout << "Process created with name: " << name << " and memory size: " << memory << std::endl;
 }
+
 
 //------------------INSTRUCTIONS------------------//
 

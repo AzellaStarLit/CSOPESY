@@ -2,6 +2,8 @@
 
 #include "BaseScheduler.h"
 #include "Process.h"
+#include "Memorymanager.h"
+#include "ConfigManager.h"
 
 #include <queue>
 #include <vector>
@@ -21,13 +23,21 @@ private:
 	std::mutex queueMutex;
 	std::condition_variable cv;
 
+	MemoryManager* memoryManager = nullptr;
+	size_t memPerProc = 0;
+	size_t memPerFrame = 0;
+
 public:
-	RRScheduler(int cores, int quantum) : Scheduler(cores), timeQuantum(quantum){}
+	RRScheduler(int cores, int quantum, size_t memProc, size_t memFrame) : Scheduler(cores), timeQuantum(quantum), memPerProc(memProc), memPerFrame(memFrame) {}
 	~RRScheduler() {
 		stop();
 		for (auto& t : workers) {
 			if (t.joinable()) t.join();
 		}
+	}
+
+	void setMemoryManager(MemoryManager* memMgr) {
+		this->memoryManager = memMgr;
 	}
 
 	void start() override;

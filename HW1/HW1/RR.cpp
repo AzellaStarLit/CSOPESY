@@ -14,6 +14,7 @@ void RRScheduler::start() {
 	}
 
 	std::cout << "RR scheduler started\n";
+	std::cout << memPerFrame;
 }
 
 void RRScheduler::stop() {
@@ -65,6 +66,25 @@ void RRScheduler::worker_loop(int coreId) {
 		}
 
 		if (process && !process->isFinished()) {
+			int pid = process->getPID();
+			if (memPerFrame == 0) {
+				std::cerr << "[RR] Error: memPerFrame is 0!\n";
+				exit(1);
+			}
+			size_t framesNeeded = memPerProc / memPerFrame;
+
+			bool alreadyInMemory = memoryManager->getProcessStartFrame(pid) != static_cast<size_t>(-1);
+			if (!alreadyInMemory) {
+				bool allocated = memoryManager->allocateFrames(framesNeeded, pid, {});
+				if (!allocated) {
+					// Not enough memory: return process to queue
+					std::cout << "\033[33m[Core " << coreId << "] Memory full for PID " << pid << ". Returning to queue.\033[0m\n";
+					add_process(process);
+					continue;
+				}
+			}
+
+
 			{
 				std::lock_guard<std::mutex> statsLock(statsMutex);
 				coreActive[coreId] = true;
@@ -90,6 +110,8 @@ void RRScheduler::worker_loop(int coreId) {
 			}
 			else {
 				process->markFinished();
+				size_t startFrame = memoryManager->getProcessStartFrame(pid);
+				memoryManager->deallocateFrames(framesNeeded, startFrame, {});
 			}
 
 			{
