@@ -167,7 +167,8 @@ bool screen_command(const std::string& command) {
 		}
 
 		// Create the process and load instructions
-		processManager.create_process(name);
+		size_t memorySize = configManager.getMemPerProc(); // get memory size from config
+		processManager.create_process(name, memorySize);   // use memory-assigning version
 		Process* p = processManager.get_process(name);
 
 		if (p) {
@@ -211,6 +212,55 @@ void run_marquee() {
 	system("cls"); 
 }
 
+void process_smi() {
+    auto allProcesses = processManager.getAllProcesses();
+    size_t usedMemory = 0;
+
+    std::cout << std::left << std::setw(20) << "Process"
+              << std::setw(15) << "Memory (KB)"
+              << std::setw(15) << "Status"
+              << "\n" << std::string(50, '-') << "\n";
+
+    for (auto* p : allProcesses) {
+        size_t mem = p->getMemoryUsage();
+        usedMemory += mem;
+        std::string status = p->isFinished() ? "Finished" : "Running";
+        std::cout << std::left << std::setw(20) << p->getName()
+                  << std::setw(15) << mem
+                  << std::setw(15) << status << "\n";
+    }
+
+    size_t totalMemory = configManager.getMaxOverallMem();
+    std::cout << "\nTotal Used Memory: " << usedMemory << " / " << totalMemory << " KB\n";
+}
+
+void vmstat() {
+    auto allProcesses = processManager.getAllProcesses();
+    int running = 0, sleeping = 0, finished = 0;
+
+    for (auto* p : allProcesses) {
+        if (p->isFinished()) ++finished;
+        else if (p->isSleeping()) ++sleeping;
+        else ++running;
+    }
+
+    size_t usedMem = processManager.getUsedMemory();
+    size_t totalMem = configManager.getMaxOverallMem();
+
+    std::cout << "\nProcesses:\n"
+              << "Running:  " << running << "\n"
+              << "Sleeping: " << sleeping << "\n"
+              << "Finished: " << finished << "\n";
+
+    std::cout << "\nMemory (KB):\n"
+              << "Used: " << usedMem << "\n"
+              << "Free: " << (totalMem - usedMem) << "\n";
+
+    std::cout << "\nPages:\n"
+              << "Page-ins: N/A\n"
+              << "Page-outs: N/A\n";
+}
+
 void exit_program() {
 	// Exit the screen here
 	scheduler->stop(); 
@@ -232,6 +282,8 @@ void exit_program() {
 			{"report-util", report_util},
 			{"clear", clear},
 			{"marquee", run_marquee},
+			{"process-smi", process_smi},
+    			{"vmstat", vmstat},
 			{"exit", exit_program}
 		};
 
