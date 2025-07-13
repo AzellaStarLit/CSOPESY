@@ -75,6 +75,15 @@ public:
     void markFinished();
     bool isFinished();
 
+   // For process-smi and vmstat in the main menu
+    size_t getMemoryUsage() const { return memorySize; }
+
+    bool isSleeping() const {
+        return instructionPointer < instructions.size() &&
+               instructions[instructionPointer].find("SLEEP") != std::string::npos;
+    }
+
+
 	~Process() = default; // Default destructor
 };
 
