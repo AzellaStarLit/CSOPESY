@@ -21,6 +21,7 @@ public:
 
     Process* get_process(const std::string& name);
     bool exists(const std::string& name) const;
+    size_t getUsedMemory() const;
 
     //GETTERS
     std::vector<Process*> getAllProcesses() const;
