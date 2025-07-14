@@ -42,6 +42,7 @@ std::unique_ptr<Scheduler> scheduler;
 bool isInitialized = false;
 
 //MemoryManager memoryManager;
+std::unique_ptr<MemoryManager> memoryManager;
 
 // Global functions for initialization
 void print_header();
@@ -255,10 +256,6 @@ void exit_program() {
 				int cores = configManager.getNumCPU();
 				std::string algo = configManager.getScheduler();
 				int quantum = configManager.getQuantumCycles();
-				MemoryManager memoryManager (
-					configManager.getMaxOverallMem(),
-					configManager.getMemPerFrame()
-					);
 
 				size_t memPerProc = configManager.getMemPerProc();
 				size_t memPerFrame = configManager.getMemPerFrame();
@@ -275,8 +272,9 @@ void exit_program() {
 					scheduler = std::make_unique<FCFSScheduler>(cores);
 				}
 				else if (algo == "rr") {
-					scheduler = std::make_unique<RRScheduler>(cores, quantum, memPerProc, memPerFrame);
-					dynamic_cast<RRScheduler*>(scheduler.get())->setMemoryManager(&memoryManager);
+					scheduler = std::make_unique<RRScheduler>(cores, quantum, configManager.getMemPerProc(), configManager.getMemPerFrame());
+					dynamic_cast<RRScheduler*>(scheduler.get())->setMemoryManager(memoryManager.get());
+					;
 
 				}
 				else {

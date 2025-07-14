@@ -18,7 +18,7 @@ MemoryManager::MemoryManager(size_t maxMem, size_t frameSz)
 
 bool MemoryManager::allocateFrames(size_t numFrames, size_t processId, const std::vector<size_t>&) {
 
-    if (freeFrames.size() > numFrames) return false;
+    if (freeFrames.size() < numFrames) return false;
 
     size_t consecutive = 0; //consecutive free frames
     size_t startIndex = 0; //start of free frames

@@ -10,11 +10,14 @@
 #include <vector>
 #include <iomanip>
 #include <fstream>
+#include "MemoryManager.h"
 
 extern ProcessManager processManager;
 extern ConsoleManager consoleManager;
 extern ConfigManager configManager;
 extern bool isInitialized;
+
+extern std::unique_ptr<MemoryManager> memoryManager;
 
 void print_header() {
 	// Prints the OS Main Menu
@@ -54,6 +57,12 @@ void initialize() { // intializer logic
 	}
 	//configManager will read from config
 	if (configManager.loadFromFile("config.txt")) {
+
+		memoryManager = std::make_unique<MemoryManager>(
+			configManager.getMaxOverallMem(),
+			configManager.getMemPerFrame()
+		);
+
 		isInitialized = true;
 		std::cout << "\033[32mInitialization complete.\033[0m\n";
 	}

@@ -78,7 +78,7 @@ void RRScheduler::worker_loop(int coreId) {
 				bool allocated = memoryManager->allocateFrames(framesNeeded, pid, {});
 				if (!allocated) {
 					// Not enough memory: return process to queue
-					std::cout << "\033[33m[Core " << coreId << "] Memory full for PID " << pid << ". Returning to queue.\033[0m\n";
+					//std::cout << "\033[33m[Core " << coreId << "] Memory full for PID " << pid << ". Returning to queue.\033[0m\n";
 					add_process(process);
 					continue;
 				}
