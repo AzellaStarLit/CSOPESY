@@ -2,6 +2,11 @@
 
 #include <algorithm>
 #include <iostream>
+#include <sstream>
+#include <fstream>
+#include <iomanip>
+#include <ctime>
+#include <filesystem>
 
 
 MemoryManager::MemoryManager(size_t maxMem, size_t frameSz)
@@ -84,4 +89,90 @@ void MemoryManager::printMemoryMap() const {
             std::cout << "Free";
         std::cout << "\n";
     }
+}
+
+size_t MemoryManager::calculateExternalFragmentation() const {
+    size_t fragments = 0;
+    bool insideFragment = false;
+
+    for (const auto& frame : memory) {
+        if (!frame.occupied) {
+            if (!insideFragment) {
+                insideFragment = true;
+            }
+            fragments++;
+        } else {
+            insideFragment = false;
+        }
+    }
+
+    size_t freeBytes = 0;
+    size_t currentFreeBlock = 0;
+    int blockCount = 0;
+
+    for (const auto& frame : memory) {
+        if (!frame.occupied) {
+            currentFreeBlock++;
+        } else {
+            if (currentFreeBlock > 0) {
+                freeBytes += currentFreeBlock * frameSize;
+                blockCount++;
+                currentFreeBlock = 0;
+            }
+        }
+    }
+
+    if (currentFreeBlock > 0) {
+        freeBytes += currentFreeBlock * frameSize;
+        blockCount++;
+    }
+
+    return (blockCount >= 2) ? freeBytes : 0;
+}
+
+
+size_t MemoryManager::countProcessesInMemory() const {
+    return processAllocations.size();
+}
+
+void MemoryManager::snapshotMemoryToFile(int quantumCycle) {
+    std::filesystem::create_directory("memory stamp");
+
+    std::ostringstream filename;
+    filename << "memory stamp/memory_stamp_" << quantumCycle << ".txt";
+    std::ofstream out(filename.str());
+
+    if (!out.is_open()) return;
+
+    // Timestamp
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    out << "Timestamp: (" << std::put_time(&tm, "%m/%d/%Y %I:%M:%S%p") << ")\n";
+
+    size_t numProcs = countProcessesInMemory();
+    size_t extFrag = calculateExternalFragmentation();
+
+    out << "Number of processes in memory: " << numProcs
+        << " \nTotal external fragmentation in KB: " << (extFrag / 1024) << "\n\n";
+
+    out << "----end---- = " << maxMemorySize << "\n";
+
+    std::vector<std::pair<int, std::pair<size_t, size_t>>> sortedAllocations(
+        processAllocations.begin(), processAllocations.end()
+    );
+
+    std::sort(sortedAllocations.begin(), sortedAllocations.end(), [](const auto& a, const auto& b) {
+        return a.second.second > b.second.second; // sort by end frame descending
+        });
+
+    for (const auto& [pid, bounds] : sortedAllocations) {
+        size_t upper = (bounds.second + 1) * frameSize;
+        size_t lower = bounds.first * frameSize;
+
+        out << upper << "\n";
+        out << "P" << pid << "\n";
+        out << lower << "\n\n";
+    }
+
+    out << "----start----- = 0\n";
 }

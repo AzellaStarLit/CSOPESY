@@ -33,4 +33,8 @@ public:
 
     //debug
     void printMemoryMap() const; 
+
+    void snapshotMemoryToFile(int quantumCycle);
+    size_t calculateExternalFragmentation() const;
+    size_t countProcessesInMemory() const;
 };

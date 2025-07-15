@@ -27,6 +27,9 @@ private:
 	size_t memPerProc = 0;
 	size_t memPerFrame = 0;
 
+	int quantumCycleCounter = 0; // tracks the number of cycles
+	std::mutex fileMutex;
+
 public:
 	RRScheduler(int cores, int quantum, size_t memProc, size_t memFrame) : Scheduler(cores), timeQuantum(quantum), memPerProc(memProc), memPerFrame(memFrame) {}
 	~RRScheduler() {

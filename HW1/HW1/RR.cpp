@@ -105,6 +105,15 @@ void RRScheduler::worker_loop(int coreId) {
 				}
 			}
 
+			{
+				std::lock_guard<std::mutex> lock(fileMutex); // prevent file clashes from multiple threads
+				quantumCycleCounter++;
+
+				if (quantumCycleCounter % timeQuantum == 0) {
+					memoryManager->snapshotMemoryToFile(quantumCycleCounter);
+				}
+			}
+
 			if (!process->isFinished()) {
 				add_process(process); //back to queue
 			}
