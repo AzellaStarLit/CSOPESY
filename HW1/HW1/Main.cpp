@@ -52,6 +52,8 @@ void scheduler_start();
 void report_util();
 void clear();
 void exit_program();
+void vmstat();
+void process_smi();
 
 
 //this is for the screen -s/-ls/-r commands
@@ -170,7 +172,9 @@ bool screen_command(const std::string& command) {
 		}
 
 		// Create the process and load instructions
-		processManager.create_process(name);
+		//TODO: Remove hard coded value
+		size_t memorySize = 300; // get memory size from config
+		processManager.create_process(name, memorySize);   // use memory-assigning version
 		Process* p = processManager.get_process(name);
 
 		if (p) {
@@ -235,6 +239,8 @@ void exit_program() {
 			{"report-util", report_util},
 			{"clear", clear},
 			{"marquee", run_marquee},
+			{"process-smi", process_smi},
+    		{"vmstat", vmstat},
 			{"exit", exit_program}
 		};
 

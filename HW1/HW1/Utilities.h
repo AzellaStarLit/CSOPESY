@@ -9,4 +9,6 @@ void scheduler_stop();
 void report_util();
 void clear();
 void exit_program();
+void vmstat();
+void process_smi();
 

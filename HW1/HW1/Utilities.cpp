@@ -133,3 +133,72 @@ void report_util() { // report-util logic
 	outfile.close();
 	std::cout << "\033[32mReport saved to csopesy-log.txt\033[0m\n";
 }
+
+void process_smi() {
+	auto allProcesses = processManager.getAllProcesses();
+	size_t totalUsedMemory = 0;
+
+	const size_t columnWidthName = 20;
+	const size_t columnWidthMem = 15;
+	const size_t columnWidthStat = 15;
+
+	std::cout << "\033[32m"
+		<< std::left
+		<< std::setw(columnWidthName) << "Process"
+		<< std::setw(columnWidthMem) << "Memory (KB)"
+		<< std::setw(columnWidthStat) << "Status"
+		<< "\033[0m\n"
+		<< std::string(50, '-') << "\n";
+
+	for (auto* process : allProcesses) {
+		size_t memUsage = process->getMemoryUsage();
+		totalUsedMemory += memUsage;
+
+		std::cout << std::left
+			<< std::setw(columnWidthName) << process->getName()
+			<< std::setw(columnWidthMem) << memUsage;
+
+		if (process->isFinished()) {
+			std::cout << std::setw(columnWidthStat) << "\033[32mFinished\033[0m";
+		}
+		else {
+			std::cout << std::setw(columnWidthStat) << "\033[33mRunning\033[0m";
+		}
+		std::cout << "\n";
+	}
+
+	std::cout << "\n\033[32m"
+		<< "Total Processes: " << allProcesses.size() << "\n"
+		<< "Total Used Memory: " << totalUsedMemory << " / "
+		<< configManager.getMaxOverallMem() << " KB"
+		<< "\033[0m\n\n";
+}
+
+
+void vmstat() {
+	auto allProcesses = processManager.getAllProcesses();
+	int running = 0, sleeping = 0, finished = 0;
+
+	for (auto* p : allProcesses) {
+		if (p->isFinished()) ++finished;
+		else if (p->isSleeping()) ++sleeping;
+		else ++running;
+	}
+
+	size_t used = processManager.getUsedMemory();
+	size_t total = configManager.getMaxOverallMem();
+
+	std::cout << "\n\033[32mProcesses:\033[0m\n"
+		<< "  Running : " << running << "\n"
+		<< "  Sleeping: " << sleeping << "\n"
+		<< "  Finished: " << finished << "\n"
+		<< "  Total   : " << (running + sleeping + finished) << "\n";
+
+	std::cout << "\n\033[32mMemory (KB):\033[0m\n"
+		<< "  Used: " << used << "\n"
+		<< "  Free: " << (total - used) << "\n";
+
+	std::cout << "\n\033[32mPages:\033\[0m\n"
+		<< "  Page-ins : N/A\n"
+		<< "  Page-outs: N/A\n\n";
+}
