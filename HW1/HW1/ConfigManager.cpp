@@ -12,35 +12,120 @@ bool ConfigManager::loadFromFile(const std::string& filename) {
         return false;
     }
 
+    auto isPowerOfTwoInRange = [](unsigned long v) {
+        return v >= 64 && v <= 65536 && (v & (v - 1)) == 0;
+        };
+
     std::unordered_map<std::string, std::function<void(const std::string&)>> setters = {
-        {"num-cpu", [this](const std::string& val) { numCPU = std::stoi(val); }},
-        {"scheduler", [this](const std::string& val) { scheduler = val; }},
-        {"quantum-cycles", [this](const std::string& val) { quantumCycles = std::stoul(val); }},
-        {"batch-process-freq", [this](const std::string& val) { batchProcessFreq = std::stoul(val); }},
-        {"min-ins", [this](const std::string& val) { minInstructions = std::stoul(val); }},
-        {"max-ins", [this](const std::string& val) { maxInstructions = std::stoul(val); }},
-        {"delays-per-exec", [this](const std::string& val) { delaysPerExec = std::stoul(val); }},
-        // New configurations
-        {"max-overall-mem", [this](const std::string& val) { maxOverallMem = std::stoul(val); }},
-        {"mem-per-frame", [this](const std::string& val) { memPerFrame = std::stoul(val); }},
-        {"min-mem-per-proc",[this](const std::string& val) { minMemPerProc = std::stoul(val); }},
-        {"max-mem-per-proc", [this](const std::string& val) { maxMemPerProc = std::stoul(val); }},
+        {"num-cpu", [this](const std::string& val) {
+            int v = std::stoi(val);
+            if (v < 1 || v > 128)
+                throw std::runtime_error("num-cpu must be in [1, 128]");
+            numCPU = v;
+        }},
+        {"scheduler", [this](const std::string& val) {
+            if (val != "fcfs" && val != "rr")
+                throw std::runtime_error("scheduler must be 'fcfs' or 'rr'");
+            scheduler = val;
+        }},
+        {"quantum-cycles", [this](const std::string& val) {
+            uint32_t v = std::stoul(val);
+            if (v < 1)
+                throw std::runtime_error("quantum-cycles must be >= 1");
+            quantumCycles = v;
+        }},
+        {"batch-process-freq", [this](const std::string& val) {
+            uint32_t v = std::stoul(val);
+            if (v < 1)
+                throw std::runtime_error("batch-process-freq must be >= 1");
+            batchProcessFreq = v;
+        }},
+        {"min-ins", [this](const std::string& val) {
+            unsigned long v = std::stoul(val);
+            if (v < 1)
+                throw std::runtime_error("min-ins must be >= 1");
+            minInstructions = v;
+        }},
+        {"max-ins", [this](const std::string& val) {
+            unsigned long v = std::stoul(val);
+            if (v < 1)
+                throw std::runtime_error("max-ins must be >= 1");
+            maxInstructions = v;
+        }},
+        {"delays-per-exec", [this](const std::string& val) {
+            unsigned long v = std::stoul(val);
+            if (v > UINT32_MAX)
+                throw std::runtime_error("delays-per-exec must be in [0, 2^32]");
+            delaysPerExec = v;
+        }},
+        {"max-overall-mem", [this, isPowerOfTwoInRange](const std::string& val) {
+            unsigned long v = std::stoul(val);
+            if (!isPowerOfTwoInRange(v))
+                throw std::runtime_error("max-overall-mem must be power of two in [64, 65536]");
+            maxOverallMem = v;
+        }},
+        {"mem-per-frame", [this, isPowerOfTwoInRange](const std::string& val) {
+            unsigned long v = std::stoul(val);
+            if (!isPowerOfTwoInRange(v))
+                throw std::runtime_error("mem-per-frame must be power of two in [64, 65536]");
+            memPerFrame = v;
+        }},
+        {"min-mem-per-proc", [this, isPowerOfTwoInRange](const std::string& val) {
+            unsigned long v = std::stoul(val);
+            if (!isPowerOfTwoInRange(v))
+                throw std::runtime_error("min-mem-per-proc must be in [64, 65536]");
+            minMemPerProc = v;
+        }},
+        {"max-mem-per-proc", [this, isPowerOfTwoInRange](const std::string& val) {
+            unsigned long v = std::stoul(val);
+            if (!isPowerOfTwoInRange(v))
+                throw std::runtime_error("max-mem-per-proc must be in [64, 65536]");
+            maxMemPerProc = v;
+        }},
     };
 
-    std::string line;
-    while (std::getline(file, line)) {
-        std::istringstream iss(line);
-        std::string key, value;
-        if (!(iss >> key >> value)) continue;
+    try {
+        std::string line;
+        while (std::getline(file, line)) {
+            std::istringstream iss(line);
+            std::string key, value;
+            if (!(iss >> key >> value)) continue;  // skip malformed lines
 
-        auto it = setters.find(key);
-        if (it != setters.end()) {
-            it->second(value);
+            auto it = setters.find(key);
+            if (it != setters.end()) {
+                it->second(value);
+            }
+            else {
+                std::cerr << "\033[33mWarning: Unknown config key '" << key << "' ignored.\033[0m\n";
+            }
         }
-    }
 
-    std::cout << "\033[32mConfiguration loaded successfully.\033[0m\n";
-    return true;
+        // Post-validation cross-checks
+        if (minInstructions > maxInstructions) {
+            std::cerr << "\033[33mWarning: min-ins > max-ins, swapping values.\033[0m\n";
+            std::swap(minInstructions, maxInstructions);
+        }
+
+        if (minMemPerProc > maxMemPerProc) {
+            std::cerr << "\033[33mWarning: min-mem-per-proc > max-mem-per-proc, swapping values.\033[0m\n";
+            std::swap(minMemPerProc, maxMemPerProc);
+        }
+
+        if (maxOverallMem % memPerFrame != 0) {
+            std::cerr << "\033[33mWarning: max-overall-mem not divisible by mem-per-frame; may cause rounding errors.\033[0m\n";
+        }
+
+        if (scheduler == "fcfs" && quantumCycles > 1) {
+            std::cerr << "\033[34mNote: quantum-cycles ignored when scheduler = fcfs.\033[0m\n";
+        }
+
+        std::cout << "\033[32mConfiguration loaded successfully.\033[0m\n";
+        return true;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "\033[31mConfig load error: " << e.what() << "\033[0m\n";
+        return false;
+    }
 }
 
 void ConfigManager::printConfig() const {

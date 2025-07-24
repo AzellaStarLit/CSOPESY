@@ -1,5 +1,6 @@
 #pragma once
 #define UTILITIES_H
+#include <vector>
 
 void print_header();
 void clear();
@@ -11,4 +12,5 @@ void clear();
 void exit_program();
 void vmstat();
 void process_smi();
+std::vector<int> getPowerOfTwoSizesInRange();
 

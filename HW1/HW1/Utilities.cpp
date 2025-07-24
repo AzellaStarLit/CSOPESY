@@ -19,6 +19,11 @@ extern bool isInitialized;
 
 extern std::unique_ptr<MemoryManager> memoryManager;
 
+
+/**************************************
+	FUNCTIONS FOR MAIN CONSOLE
+***************************************/
+
 void print_header() {
 	// Prints the OS Main Menu
 	std::cout << " ::::::::   ::::::::   ::::::::  :::::::::  :::::::::: ::::::::  :::   :::\n";
@@ -201,4 +206,21 @@ void vmstat() {
 	std::cout << "\n\033[32mPages:\033\[0m\n"
 		<< "  Page-ins : N/A\n"
 		<< "  Page-outs: N/A\n\n";
+}
+/*****************************
+	HELPER FUNCTIONS
+******************************/
+
+std::vector<int> getPowerOfTwoSizesInRange() {
+	std::vector<int> result;
+
+	int minVal = configManager.getMinMemPerProc();
+	int maxVal = configManager.getMaxMemPerProc();
+
+	for (int i = 0; i <= 31; ++i) {
+		int power = 1 << i;
+		if (power >= minVal && power <= maxVal)
+			result.push_back(power);
+	}
+	return result;
 }

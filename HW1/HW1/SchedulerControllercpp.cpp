@@ -6,11 +6,10 @@
 #include <random>
 
 #include "SchedulerController.h"
-
-
 #include "ProcessManager.h"
 #include "ConsoleManager.h"
 #include "ConfigManager.h"
+#include "Utilities.h"
 
 extern ProcessManager processManager;
 extern ConsoleManager consoleManager;
@@ -49,8 +48,15 @@ void scheduler_start() {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> instructionDist(minInstructions, maxInstructions);
-	std::uniform_int_distribution<> memDist(minMemPerProcess, maxMemPerProcess);
 	std::uniform_int_distribution<> messageDist(0, 10); // change based on number of messages
+
+	std::vector<int> validMemSizes = getPowerOfTwoSizesInRange();
+
+	if (validMemSizes.empty()) {
+		std::cerr << "\033[31mNo valid power-of-two memory sizes found in config range!\033[0m\n";
+		return;
+	}
+	std::uniform_int_distribution<> memDist(0, validMemSizes.size() - 1);
 
 	static const std::string templates[] = {
 			"DECLARE(var_x, 0)",
@@ -77,7 +83,7 @@ void scheduler_start() {
 				std::scoped_lock lock(processManager.getMutex(), consoleManager.getMutex());
 
 
-				int memSize = memDist(gen);
+				int memSize = validMemSizes[memDist(gen)];
 
 				processManager.create_process(name, memSize);
 				Process* p = processManager.get_process(name);
