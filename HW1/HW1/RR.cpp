@@ -14,7 +14,7 @@ void RRScheduler::start() {
 	}
 
 	std::cout << "RR scheduler started\n";
-	std::cout << memPerFrame;
+	std::cout << "Memory per Frame: " << memPerFrame << "\n";
 }
 
 void RRScheduler::stop() {

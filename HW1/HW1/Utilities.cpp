@@ -65,6 +65,11 @@ void initialize() { // intializer logic
 
 		isInitialized = true;
 		std::cout << "\033[32mInitialization complete.\033[0m\n";
+
+		//DEBUG: Print configuration settings
+		std::cout << "\033[1;34mConfiguration Settings:\033[0m\n";
+		configManager.printConfig();
+
 	}
 	else {
 		std::cout << "\033[31mInitialization failed.\033[0m\n";

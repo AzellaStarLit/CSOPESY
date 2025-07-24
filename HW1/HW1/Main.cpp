@@ -257,7 +257,8 @@ void exit_program() {
 				std::string algo = configManager.getScheduler();
 				int quantum = configManager.getQuantumCycles();
 
-				size_t memPerProc = configManager.getMemPerProc();
+				size_t minMemPerProc = configManager.getMinMemPerProc();
+				size_t maxMemPerProc = configManager.getMaxMemPerProc();
 				size_t memPerFrame = configManager.getMemPerFrame();
 
 				std::cout << "mem-per-frame: " << memPerFrame << "\n"; 
@@ -272,7 +273,8 @@ void exit_program() {
 					scheduler = std::make_unique<FCFSScheduler>(cores);
 				}
 				else if (algo == "rr") {
-					scheduler = std::make_unique<RRScheduler>(cores, quantum, configManager.getMemPerProc(), configManager.getMemPerFrame());
+					//TODO: Edit to not be hardcoded
+					scheduler = std::make_unique<RRScheduler>(cores, quantum, 4096, 16);
 					dynamic_cast<RRScheduler*>(scheduler.get())->setMemoryManager(memoryManager.get());
 					;
 

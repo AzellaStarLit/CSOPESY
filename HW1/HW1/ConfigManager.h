@@ -16,7 +16,10 @@ public:
 
     unsigned int getMaxOverallMem() const { return maxOverallMem; }
     unsigned int getMemPerFrame() const { return memPerFrame; }
-    unsigned int getMemPerProc() const { return memPerProc; }
+    unsigned int getMinMemPerProc() const { return minMemPerProc; }
+	unsigned int getMaxMemPerProc() const { return maxMemPerProc; }
+
+	void printConfig() const;
 
 private:
     int numCPU;

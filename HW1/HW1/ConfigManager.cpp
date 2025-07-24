@@ -42,3 +42,19 @@ bool ConfigManager::loadFromFile(const std::string& filename) {
     std::cout << "\033[32mConfiguration loaded successfully.\033[0m\n";
     return true;
 }
+
+void ConfigManager::printConfig() const {
+    std::cout << "\033[34mCurrent Configuration:\033[0m\n";
+    std::cout << "num-cpu: " << numCPU << "\n";
+    std::cout << "scheduler: " << scheduler << "\n";
+    std::cout << "quantum-cycles: " << quantumCycles << "\n";
+    std::cout << "batch-process-freq: " << batchProcessFreq << "\n";
+    std::cout << "min-ins: " << minInstructions << "\n";
+    std::cout << "max-ins: " << maxInstructions << "\n";
+    std::cout << "delays-per-exec: " << delaysPerExec << "\n";
+    // New configurations
+    std::cout << "max-overall-mem: " << maxOverallMem << "\n";
+    std::cout << "mem-per-frame: " << memPerFrame << "\n";
+    std::cout << "min-mem-per-proc: " << minMemPerProc << "\n";
+    std::cout << "max-mem-per-proc: " << maxMemPerProc << "\n";
+}

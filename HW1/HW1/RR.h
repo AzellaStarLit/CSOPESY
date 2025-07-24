@@ -31,6 +31,7 @@ private:
 	std::mutex fileMutex;
 
 public:
+	//TODO: Edit so that memory can handle processes with different memory requirements
 	RRScheduler(int cores, int quantum, size_t memProc, size_t memFrame) : Scheduler(cores), timeQuantum(quantum), memPerProc(memProc), memPerFrame(memFrame) {}
 	~RRScheduler() {
 		stop();
