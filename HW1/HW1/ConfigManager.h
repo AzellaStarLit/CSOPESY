@@ -29,5 +29,6 @@ private:
 
     unsigned int maxOverallMem;
     unsigned int memPerFrame;
-    unsigned int memPerProc;
+    unsigned int minMemPerProc;
+    unsigned int maxMemPerProc;
 }; 

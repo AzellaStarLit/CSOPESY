@@ -23,7 +23,8 @@ bool ConfigManager::loadFromFile(const std::string& filename) {
         // New configurations
         {"max-overall-mem", [this](const std::string& val) { maxOverallMem = std::stoul(val); }},
         {"mem-per-frame", [this](const std::string& val) { memPerFrame = std::stoul(val); }},
-        {"mem-per-proc", [this](const std::string& val) { memPerProc = std::stoul(val); }},
+        {"min-mem-per-proc",[this](const std::string& val) { minMemPerProc = std::stoul(val); }},
+        {"max-mem-per-proc", [this](const std::string& val) { maxMemPerProc = std::stoul(val); }},
     };
 
     std::string line;
