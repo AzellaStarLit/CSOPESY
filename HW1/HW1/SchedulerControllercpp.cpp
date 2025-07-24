@@ -33,10 +33,14 @@ void scheduler_start() {
 
 	generating = true;
 
-	// Configure from file 
+	// CONFIGURE FROM FILE
+
 	const uint32_t minInstructions = configManager.getMinInstructions();
 	const uint32_t maxInstructions = configManager.getMaxInstructions();
 	const int interval = configManager.getBatchProcessFreq();
+
+	const size_t maxMemPerProcess = configManager.getMaxMemPerProc();
+	const size_t minMemPerProcess = configManager.getMinMemPerProc();
 
 	//TODO: Read from config file
 	//Configuration for memory
@@ -45,6 +49,7 @@ void scheduler_start() {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<> instructionDist(minInstructions, maxInstructions);
+	std::uniform_int_distribution<> memDist(minMemPerProcess, maxMemPerProcess);
 	std::uniform_int_distribution<> messageDist(0, 10); // change based on number of messages
 
 	static const std::string templates[] = {
@@ -71,7 +76,10 @@ void scheduler_start() {
 			{
 				std::scoped_lock lock(processManager.getMutex(), consoleManager.getMutex());
 
-				processManager.create_process(name, memPerProcess);
+
+				int memSize = memDist(gen);
+
+				processManager.create_process(name, memSize);
 				Process* p = processManager.get_process(name);
 
 				if (p) {
@@ -79,6 +87,7 @@ void scheduler_start() {
 					std::cerr << p->getPID();
 
 					int numInstructions = instructionDist(gen);
+
 					std::vector<std::string> instructions;
 					for (int i = 0; i < numInstructions; ++i) {
 						std::string base = templates[messageDist(gen)];
@@ -108,54 +117,5 @@ void scheduler_stop() {
 	generating = false;
 	if (generatorThread.joinable()) generatorThread.join();
 
-	// if (scheduler) scheduler->stop();
-
 	std::cout << "\033[32mScheduler stopped.\033[0m\n";
 }
-
-
-//generates processes every time interval
-/*
-void scheduler_start() {
-	if (generating) return;
-
-	generating = true;
-	//fcfs->start(); //start fcfs threads
-
-	int interval = 5000; //I put this here for testing only
-	int counter = 1;
-
-	generatorThread = std::thread([=]() mutable {
-		while (generating) {
-
-			std::string name = "process_" + std::to_string(counter++);
-			Process* p = new Process(name, 10); //for testing; this should come from config too
-
-			for (int i = 0; i < 10; i++) {
-				p->add_instruction("print"); //should be randomized from list of all recognized instructions
-			}
-
-			//fcfs->add_process(p); //add the processes to the scheduler
-			processManager.create_process(p->getName());
-			consoleManager.attach_screen(name, p); //auto attach a screen to the process
-
-			std::this_thread::sleep_for(std::chrono::milliseconds(interval)); //wait
-
-		}
-	});
-
-	std::cout << "Scheduler started. Generating processes..."; 
-
-}
-
-void scheduler_stop() {
-	if (!generating) return;
-
-	generating = false;
-	if (generatorThread.joinable()) generatorThread.join();
-
-	fcfs->stop();
-	std::cout << "Scheduler stopped.\n";
-}
-*/
-

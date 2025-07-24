@@ -33,17 +33,6 @@ void print_header() {
 	std::cout << "\033[1;33mType \'exit\' to quit, \'clear\' to clear the screen\n\033[0m";
 }
 
-/*
-void initialize() {
-	// Initialize any necessary variables or settings here
-	std::cout << "initialize command recognized. Doing something.\n";
-}
-
-void report_util() {
-	// Report the utilization of the system here
-	std::cout << "report_util command recognized. Doing something.\n";
-}*/
-
 void clear() {
 	// Clear the screen here
 	std::system("cls");
@@ -58,7 +47,7 @@ void initialize() { // intializer logic
 	//configManager will read from config
 	if (configManager.loadFromFile("config.txt")) {
 
-		memoryManager = std::make_unique<MemoryManager>(
+			memoryManager = std::make_unique<MemoryManager>(
 			configManager.getMaxOverallMem(),
 			configManager.getMemPerFrame()
 		);
@@ -67,8 +56,8 @@ void initialize() { // intializer logic
 		std::cout << "\033[32mInitialization complete.\033[0m\n";
 
 		//DEBUG: Print configuration settings
-		std::cout << "\033[1;34mConfiguration Settings:\033[0m\n";
-		configManager.printConfig();
+		//std::cout << "\033[1;34mConfiguration Settings:\033[0m\n";
+		//configManager.printConfig();
 
 	}
 	else {

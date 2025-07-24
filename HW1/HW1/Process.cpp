@@ -34,6 +34,7 @@ void Process::setCompletionTimestamp(){
 
 //------------------CONSTRUCTORS------------------//
 
+//TODO: DETERMINE WHICH CONSTRUCTORS ARE USED AND REMOVE UNUSED ONES
 Process::Process()
     : name("default"), instructionPointer(0), totalLines(0), memorySize(0),
     creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {}
