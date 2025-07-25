@@ -45,7 +45,6 @@ void scheduler_start() {
 	std::uniform_int_distribution<> memDist(0, validMemSizes.size() - 1);
 
 	int counter = 1;
-	int pidCounter = 0;
 
 	generatorThread = std::thread([=]() mutable {
 		while (generating) {
@@ -60,8 +59,6 @@ void scheduler_start() {
 				Process* p = processManager.get_process(name);
 
 				if (p) {
-					p->setPID(pidCounter++);
-					std::cerr << p->getPID();
 
 					std::vector<std::string> instructions = generate_instructions();
 

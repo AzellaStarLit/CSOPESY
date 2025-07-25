@@ -5,24 +5,6 @@
 
 extern ProcessManager processManager;
 
-//TODO: I think this should take the number of instructions 
-/*
-void ConsoleManager::create_screen_with_process(const std::string& name) {
-    if (screens.find(name) != screens.end()) {
-        std::cout << "Screen '" << name << "' already exists. Use 'screen -r' to resume.\n";
-        return;
-   }
-
-    //add the process to the list
-    processManager.create_process(name);
-    Process* process = processManager.get_process(name); //retrieve the new process
-
-    screens[name] = Console(name, process); //create a console for the process
-    screens[name].draw(); //enter screen after creation
-
-}
-*/
-
 void ConsoleManager::create_screen_with_process(const std::string& name) {
     if (screens.find(name) == screens.end()) {
         processes[name] = Process(name);

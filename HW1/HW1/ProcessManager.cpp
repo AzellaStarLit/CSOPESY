@@ -17,7 +17,7 @@ void ProcessManager::create_process(const std::string& name) {
 
 void ProcessManager::create_process(const std::string& name, size_t processMemory) {
     if (!exists(name)) {
-        processes[name] = Process(name, processMemory);
+        processes.try_emplace(name, name, processMemory);
         //std::cout << "Process '" << name << "' created.\n";
     }
     else {

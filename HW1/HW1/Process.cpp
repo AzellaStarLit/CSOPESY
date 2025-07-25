@@ -43,11 +43,6 @@ Process::Process(const std::string& name)
     : name(name), instructionPointer(0), totalLines(0), memorySize(0),
     creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {}
 
-Process::Process(const std::string& name, int instructionCount, int pid)
-    : name(name), instructionPointer(0), totalLines(instructionCount), memorySize(0), processId(pid),
-    creationTimestamp(get_current_timestamp()) {
-}
-
 Process::Process(const std::string& name, size_t memory)
     : name(name), instructionPointer(0), totalLines(0), memorySize(memory),
     creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {
@@ -373,6 +368,7 @@ void Process::show_symbol_table() const {
 }
 
 //------------------GETTERS/SETTERS------------------//
+
 
 std::string Process::getName() const {
     return name;

@@ -31,6 +31,7 @@ void Console::draw() {
 //------------------SCREENS------------------//
 void Console::draw_process_screen() {
     std::cout << "\033[36m--- Screen: " << name << " ---\033[0m\n";
+	std::cout << "Process ID: " << screenProcess->getPID() << "\n";
     std::cout << "Process Name: " << screenProcess->getName() << "\n";
     std::cout << "Current Instruction: " << screenProcess->getCurrentInstruction() << "\n";
 	std::cout << "Total Lines: " << screenProcess->getCurrentLine() << "/" << screenProcess->getTotalLines() << "\n";
