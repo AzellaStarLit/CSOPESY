@@ -39,45 +39,7 @@ bool ProcessManager::exists(const std::string& name) const {
     return processes.find(name) != processes.end();
 }
 
-void ProcessManager::generate_instructions(const std::string& processName, ConsoleManager& consoleManager) {
-    //std::lock_guard<std::mutex> lock(processMutex);
-    std::random_device rd;
-    std::mt19937 gen(rd());
 
-    //TODO: Edit this to read set values in Configuration file
-    int min = 1;
-    int max = 10000;
-    std::uniform_int_distribution<> dis(min, max);
-
-    int instructionCount = dis(gen);
-
-    std::cout << "Generating " << instructionCount << " instructions for " << processName << "...\n";
-
-    Process* process = get_process(processName);
-    if (!process) return;
-
-    for (int i = 0; i < instructionCount; ++i) {
-        std::cout << "Adding instruction " << i + 1 << " to " << processName << "\n";
-        process->add_instruction(generate_rand_instruction());
-    }
-
-    std::cout << "\033[32mGenerated " << instructionCount << " instructions for " << processName << ".\033[0m\n";
-    consoleManager.attach_screen(processName, process);
-}
-
-std::string ProcessManager::generate_rand_instruction() {
-    static const std::string instructions[] = {
-        "PRINT(\"\")",
-        "PRINT(\"Processing...\")",
-        "PRINT(\"We love CSOPESY <3\")",
-    };
-
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_int_distribution<> dis(0, sizeof(instructions) - 1);
-
-    return instructions[dis(gen)];
-}
 
 std::mutex& ProcessManager::getMutex() {
     return processMutex;

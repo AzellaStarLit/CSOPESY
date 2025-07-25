@@ -134,6 +134,7 @@ bool screen_command(const std::string& command) {
 		std::string memSizeStr;
 		iss >> memSizeStr;
 
+		// Validation for memory size input
 		if (memSizeStr.empty()) {
 			std::cout << "\033[31mMissing memory size. Usage: screen -s <process_name> <process_memory_size>\033[0m\n";
 			return false;
@@ -157,6 +158,7 @@ bool screen_command(const std::string& command) {
 			std::cout << "Process '" << name << "' already exists. Use 'screen -r " << name << "' to resume.\n";
 			return false;
 		}
+
 
 		static const std::string templates[] = {
 			"DECLARE(var_x, 0)",
@@ -195,8 +197,7 @@ bool screen_command(const std::string& command) {
 
 		// Create the process and load instructions
 		//TODO: Remove hard coded value
-		//size_t memorySize = 300; // get memory size from config
-		processManager.create_process(name, memorySize);   // use memory-assigning version
+		processManager.create_process(name, memorySize);
 		Process* p = processManager.get_process(name);
 
 		if (p) {

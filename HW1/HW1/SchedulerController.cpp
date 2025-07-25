@@ -22,11 +22,6 @@ std::thread generatorThread; //generates the processes
 
 extern std::unique_ptr<Scheduler> scheduler;
 
-//TODO: GET TICK INTERVAL FROM CONFIG FILE
-//int get_tick_interval() {
-	
-//}
-
 void scheduler_start() {
 	if (generating) return;
 
@@ -40,10 +35,6 @@ void scheduler_start() {
 
 	const size_t maxMemPerProcess = configManager.getMaxMemPerProc();
 	const size_t minMemPerProcess = configManager.getMinMemPerProc();
-
-	//TODO: Read from config file
-	//Configuration for memory
-	const size_t memPerProcess = 4096;
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
