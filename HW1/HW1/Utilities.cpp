@@ -239,6 +239,7 @@ bool isPowerOfTwo(int n) {
 	return (n & (n - 1)) == 0;
 }
 
+//TODO: Instructions may need to take space in memory
 std::vector<std::string> generate_instructions() {
 	uint32_t minInstructions = configManager.getMinInstructions();
 	uint32_t maxInstructions = configManager.getMaxInstructions();

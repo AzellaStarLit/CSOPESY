@@ -159,44 +159,10 @@ bool screen_command(const std::string& command) {
 			return false;
 		}
 
-
-		static const std::string templates[] = {
-			"DECLARE(var_x, 0)",
-			"DECLARE(var_y, 5)",
-			"ADD(var_z, var_x, var_y)",
-			"SUBTRACT(var_a, var_y, var_x)",
-			"SLEEP(300)",
-			"SLEEP(2000)",
-			"FOR([PRINT(\"Looping inside process\")], 2)",
-			"FOR([ADD(var_i, var_x, 1)], 2)",
-			"FOR([SUBTRACT(var_j, var_y, 1)], 2)",
-			"PRINT(\"Hello world from process\")",
-			"PRINT(\"We love CSOPESY <3\")"
-		};
-
-		// Get min and max instructions from config
-		uint32_t minInstructions = configManager.getMinInstructions();
-		uint32_t maxInstructions = configManager.getMaxInstructions();
-
-		if (minInstructions > maxInstructions) std::swap(minInstructions, maxInstructions);
-
-		std::random_device rd;
-		std::mt19937 gen(rd());
-		std::uniform_int_distribution<> instructionCountDist(minInstructions, maxInstructions);
-		std::uniform_int_distribution<> templateIndexDist(0, sizeof(templates) / sizeof(templates[0]) - 1);
-
-		// Generate random number of instructions
-		int numInstructions = instructionCountDist(gen);
-
 		// Create instructions vector
-		std::vector<std::string> instructions;
-		for (int i = 0; i < numInstructions; ++i) {
-			std::string instr = templates[templateIndexDist(gen)];
-			instructions.push_back(instr);
-		}
+		std::vector<std::string> instructions = generate_instructions();
 
 		// Create the process and load instructions
-		//TODO: Remove hard coded value
 		processManager.create_process(name, memorySize);
 		Process* p = processManager.get_process(name);
 
