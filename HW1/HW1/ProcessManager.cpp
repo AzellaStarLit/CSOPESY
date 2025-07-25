@@ -25,6 +25,7 @@ void ProcessManager::create_process(const std::string& name, size_t processMemor
     }
 }
 
+
 //retrieve a process by name
 Process* ProcessManager::get_process(const std::string& name) {
     auto it = processes.find(name);

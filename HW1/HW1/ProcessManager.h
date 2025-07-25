@@ -28,22 +28,5 @@ public:
     std::mutex& getMutex();
     size_t get_process_count() const;
 
-    //for scheduler start
-    std::string generate_rand_instruction();
-    void generate_instructions(const std::string& processName, ConsoleManager& consoleManager);
-
-
-    //for testing the scheduler 
-    void create_dummy(const std::string& name, int instructionCount) {
-        if (!exists(name)) {
-            Process p(name, instructionCount);
-            for (int i = 0; i < instructionCount; i++) {
-                p.add_instruction("PRINT(Line " + std::to_string(i + 1) + ")");
-            }
-
-            processes[name] = p;
-        }
-    }
-
 
 };

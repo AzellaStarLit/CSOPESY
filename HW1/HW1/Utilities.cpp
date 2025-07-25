@@ -4,13 +4,16 @@
 #include "ConfigManager.h"
 #include "BaseScheduler.h"
 #include "sharedState.h"
+#include "MemoryManager.h"
 
 #include <iostream>
 #include <cstdlib>
 #include <vector>
 #include <iomanip>
 #include <fstream>
-#include "MemoryManager.h"
+#include <random>
+#include <memory>
+#include <string>
 
 extern ProcessManager processManager;
 extern ConsoleManager consoleManager;
@@ -235,3 +238,38 @@ bool isPowerOfTwo(int n) {
 
 	return (n & (n - 1)) == 0;
 }
+
+std::vector<std::string> generate_instructions() {
+	uint32_t minInstructions = configManager.getMinInstructions();
+	uint32_t maxInstructions = configManager.getMaxInstructions();
+
+	static const std::string templates[] = {
+			"DECLARE(var_x, 0)",
+			"DECLARE(var_y, 5)",
+			"ADD(var_z, var_x, var_y)",
+			"SUBTRACT(var_a, var_y, var_x)",
+			"SLEEP(300)",
+			"SLEEP(2000)",
+			"FOR([PRINT(\"Looping inside process\")], 2)",
+			"FOR([ADD(var_i, var_x, 1)], 2)",
+			"FOR([SUBTRACT(var_j, var_y, 1)], 2)",
+			"PRINT(\"Hello world from process\")",
+			"PRINT(\"We love CSOPESY <3\")"
+	};
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> instructionCountDist(minInstructions, maxInstructions);
+	std::uniform_int_distribution<> templateIndexDist(0, sizeof(templates) / sizeof(templates[0]) - 1);
+
+	// Generate random number of instructions
+	int numInstructions = instructionCountDist(gen);
+
+	std::vector<std::string> instructions;
+	for (int i = 0; i < numInstructions; ++i) {
+		std::string instr = templates[templateIndexDist(gen)];
+		instructions.push_back(instr);
+	}
+	return instructions;
+}
+

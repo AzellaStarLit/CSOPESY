@@ -47,6 +47,7 @@ void scheduler_start() {
 		std::cerr << "\033[31mNo valid power-of-two memory sizes found in config range!\033[0m\n";
 		return;
 	}
+
 	std::uniform_int_distribution<> memDist(0, validMemSizes.size() - 1);
 
 	static const std::string templates[] = {
