@@ -131,6 +131,28 @@ bool screen_command(const std::string& command) {
 	if (flag == "-s") {
 		std::lock_guard<std::mutex> lock(processConsoleMutex);
 
+		std::string memSizeStr;
+		iss >> memSizeStr;
+
+		if (memSizeStr.empty()) {
+			std::cout << "\033[31mMissing memory size. Usage: screen -s <process_name> <process_memory_size>\033[0m\n";
+			return false;
+		}
+
+		size_t memorySize;
+		try {
+			memorySize = std::stoi(memSizeStr);
+		}
+		catch (...) {
+			std::cout << "\033[31mInvalid memory size format.\033[0m\n";
+			return false;
+		}
+
+		if (!isPowerOfTwo(memorySize)) {
+			std::cout << "\033[31mInvalid memory allocation. Allowed: powers of 2 from 64 to 65536 bytes.\033[0m\n";
+			return false;
+		}
+
 		if (processManager.exists(name)) {
 			std::cout << "Process '" << name << "' already exists. Use 'screen -r " << name << "' to resume.\n";
 			return false;
@@ -173,7 +195,7 @@ bool screen_command(const std::string& command) {
 
 		// Create the process and load instructions
 		//TODO: Remove hard coded value
-		size_t memorySize = 300; // get memory size from config
+		//size_t memorySize = 300; // get memory size from config
 		processManager.create_process(name, memorySize);   // use memory-assigning version
 		Process* p = processManager.get_process(name);
 

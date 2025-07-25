@@ -13,4 +13,5 @@ void exit_program();
 void vmstat();
 void process_smi();
 std::vector<int> getPowerOfTwoSizesInRange();
+bool isPowerOfTwo(int n);
 

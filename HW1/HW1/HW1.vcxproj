@@ -147,7 +147,7 @@
     <ClCompile Include="Process.cpp" />
     <ClCompile Include="ProcessManager.cpp" />
     <ClCompile Include="RR.cpp" />
-    <ClCompile Include="SchedulerControllercpp.cpp" />
+    <ClCompile Include="SchedulerController.cpp" />
     <ClCompile Include="Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>

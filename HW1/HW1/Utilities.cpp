@@ -224,3 +224,14 @@ std::vector<int> getPowerOfTwoSizesInRange() {
 	}
 	return result;
 }
+
+bool isPowerOfTwo(int n) {
+
+	int min = configManager.getMinMemPerProc();
+	int max = configManager.getMaxMemPerProc();
+
+	if (n < min || n > max) return false;
+	if (n <= 0) return false;
+
+	return (n & (n - 1)) == 0;
+}
