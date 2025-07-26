@@ -271,7 +271,7 @@ void exit_program() {
 				}
 				else if (algo == "rr") {
 					//TODO: Edit to not be hardcoded
-					scheduler = std::make_unique<RRScheduler>(cores, quantum, 4096, 16);
+					scheduler = std::make_unique<RRScheduler>(cores, quantum, 4096, 128);
 					dynamic_cast<RRScheduler*>(scheduler.get())->setMemoryManager(memoryManager.get());
 					;
 
