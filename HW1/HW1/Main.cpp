@@ -56,7 +56,7 @@ void vmstat();
 void process_smi();
 
 
-//this is for the screen -s/-ls/-r commands
+//this is for the screen -s/-ls/-r/-c commands
 bool screen_command(const std::string& command) {
 
 	//get the command
@@ -201,6 +201,82 @@ bool screen_command(const std::string& command) {
 		return true;
 
 	}
+
+	if (flag == "-c") {
+		std::lock_guard<std::mutex> lock(processConsoleMutex);
+
+		std::string memSizeStr;
+		iss >> memSizeStr;
+
+		if (memSizeStr.empty()) {
+			std::cout << "\033[31mMissing memory size. Usage: screen -c <name> <memory_size> <instructions>\033[0m\n";
+			return false;
+		}
+
+		size_t memorySize;
+		try {
+			memorySize = std::stoi(memSizeStr);
+		}
+		catch (...) {
+			std::cout << "\033[31mInvalid memory size format.\033[0m\n";
+			return false;
+		}
+
+		if (!isPowerOfTwo(memorySize)) {
+			std::cout << "\033[31mInvalid memory allocation. Allowed: powers of 2 from 64 to 65536 bytes.\033[0m\n";
+			return false;
+		}
+
+		if (processManager.exists(name)) {
+			std::cout << "\033[31mProcess '" << name << "' already exists. Use 'screen -r " << name << "' to resume.\033[0m\n";
+			return false;
+		}
+
+		// Grab remaining instructions from the input line
+		std::string restOfLine;
+		std::getline(iss, restOfLine);
+
+		// Trim leading spaces
+		restOfLine.erase(0, restOfLine.find_first_not_of(" \t"));
+
+		if (restOfLine.empty()) {
+			std::cout << "\033[31mMissing instructions. Usage: screen -c <name> <memory_size> <instructions>\033[0m\n";
+			return false;
+		}
+
+		// Split by semicolon
+		std::vector<std::string> instructions;
+		std::stringstream ss(restOfLine);
+		std::string instr;
+
+		while (std::getline(ss, instr, ';')) {
+			// Trim whitespace from each instruction
+			instr.erase(0, instr.find_first_not_of(" \t"));
+			instr.erase(instr.find_last_not_of(" \t") + 1);
+			if (!instr.empty()) {
+				instructions.push_back(instr);
+			}
+		}
+
+		// Now create and register the process
+		processManager.create_process(name, memorySize);
+		Process* p = processManager.get_process(name);
+
+		if (p) {
+			p->load_instructions(instructions);
+			consoleManager.attach_screen(name, p);
+
+			if (scheduler) {
+				scheduler->add_process(p);
+			}
+
+			std::cout << "\033[32mLoaded " << instructions.size() << " instructions for process '" << name << "'.\033[0m\n";
+			consoleManager.resume_screen(name);
+			return true;
+		}
+
+	}
+	return false;
 }
 
 void run_marquee() {
