@@ -244,6 +244,7 @@ std::vector<std::string> generate_instructions() {
 	uint32_t minInstructions = configManager.getMinInstructions();
 	uint32_t maxInstructions = configManager.getMaxInstructions();
 
+	//TODO: EDIT Instructions for more variety
 	static const std::string templates[] = {
 			"DECLARE(var_x, 100)",
 			"DECLARE(var_y, 50)",

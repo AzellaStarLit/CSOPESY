@@ -13,7 +13,7 @@
 #include <random>
 
 //this is a list of instructions recognized by a process
-std::unordered_map<std::string, std::function<void(const std::string&)>> instructionList;
+std::unordered_map<std::string, std::function<void(const std::string&, int)>> instructionList;
 int Process::global_pid_counter = 1; // Start PID from 1
 
 void Process::setTimestamp() {
@@ -38,33 +38,19 @@ void Process::setCompletionTimestamp(){
 Process::Process()
     : name("default"), instructionPointer(0), totalLines(0), memorySize(0),
     creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {
-	initializeInstructionList();
 }
 
 Process::Process(const std::string& name)
     : name(name), instructionPointer(0), totalLines(0), memorySize(0),
     creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {
-	initializeInstructionList();
 }
 
 Process::Process(const std::string& name, size_t memory)
     : name(name), instructionPointer(0), totalLines(0), memorySize(memory),
     creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {
-	initializeInstructionList();
 
 	//DEBUG: Print process creation details
     std::cout << "Process created with name: " << name << " and memory size: " << memory << std::endl;
-}
-
-void Process::initializeInstructionList() {
-    instructionList = {
-        { "PRINT", [this](const std::string& arg) { execute_print(arg, currentCoreId); } },
-        { "SLEEP", [this](const std::string& arg) { execute_sleep(arg); } },
-        { "DECLARE", [this](const std::string& arg) { execute_declare(arg); } },
-        { "ADD", [this](const std::string& arg) { execute_add(arg); } },
-        { "SUBTRACT", [this](const std::string& arg) { execute_subtract(arg); } },
-        { "FOR", [this](const std::string& arg) { execute_for(arg, currentCoreId, 1); } }
-    };
 }
 
 //------------------INSTRUCTIONS------------------//
@@ -125,6 +111,7 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
     std::string command = instruction.substr(0, parenStart);
     std::string argument = instruction.substr(parenStart + 1, parenEnd - parenStart - 1);
 
+  
     if (command == "PRINT") {
         execute_print(argument, coreId);
         instructionPointer++;

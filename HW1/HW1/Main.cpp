@@ -325,7 +325,7 @@ void exit_program() {
 			if (command == "initialize") {
 				initialize();
 
-				//TODO: THESE WILL BE READ FROM COFIG FILE
+				//THESE WILL BE READ FROM COFIG FILE
 				int cores = configManager.getNumCPU();
 				std::string algo = configManager.getScheduler();
 				int quantum = configManager.getQuantumCycles();
