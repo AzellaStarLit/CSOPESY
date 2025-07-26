@@ -152,12 +152,7 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
 void Process::execute_print(const std::string& msg, int coreId) {
     
     //start timestamp for each instruction
-    auto now = std::chrono::system_clock::now();
-    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-    std::tm local_tm = *std::localtime(&now_c);
-    std::ostringstream oss;
-    oss << std::put_time(&local_tm, "%m/%d/%Y, %I:%M:%S %p");
-    std::string timestamp = oss.str();
+    std::string timestamp = get_current_timestamp();
 
     std::string printMessage;
 
