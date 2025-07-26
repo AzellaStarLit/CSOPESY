@@ -245,17 +245,18 @@ std::vector<std::string> generate_instructions() {
 	uint32_t maxInstructions = configManager.getMaxInstructions();
 
 	static const std::string templates[] = {
-			"DECLARE(var_x, 0)",
-			"DECLARE(var_y, 5)",
-			"ADD(var_z, var_x, var_y)",
-			"SUBTRACT(var_a, var_y, var_x)",
+			"DECLARE(var_x, 100)",
+			"DECLARE(var_y, 50)",
+			"ADD(var_x, var_x, var_y)",
+			"SUBTRACT(var_x, var_y, var_x)",
 			"SLEEP(300)",
 			"SLEEP(2000)",
-			"FOR([PRINT(\"Looping inside process\")], 2)",
-			"FOR([ADD(var_i, var_x, 1)], 2)",
-			"FOR([SUBTRACT(var_j, var_y, 1)], 2)",
+			//"FOR([PRINT(\"Looping inside process\")], 2)",
+			//"FOR([ADD(var_x, var_x, 1)], 2)",
+			//"FOR([SUBTRACT(var_x, var_y, 1)], 2)",
 			"PRINT(\"Hello world from process\")",
-			"PRINT(\"We love CSOPESY <3\")"
+			"PRINT(\"We love CSOPESY <3\")",
+			"PRINT(\"Value from: \" +var_x)"
 	};
 
 	std::random_device rd;

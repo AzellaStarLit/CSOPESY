@@ -45,6 +45,7 @@ public:
     Process(const std::string& name, int instructionCount, int pid); //when a process is given a name and instruction count
     Process(const std::string& name, size_t memory);
 
+    void initializeInstructionList();
 
     //TODO: GENERATE INSTRUCTIONS AND EXECUTE INSTRUCTIONS
     void generate_instructions();

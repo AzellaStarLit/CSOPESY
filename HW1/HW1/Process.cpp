@@ -37,19 +37,35 @@ void Process::setCompletionTimestamp(){
 //TODO: DETERMINE WHICH CONSTRUCTORS ARE USED AND REMOVE UNUSED ONES
 Process::Process()
     : name("default"), instructionPointer(0), totalLines(0), memorySize(0),
-    creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {}
+    creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {
+	initializeInstructionList();
+}
 
 Process::Process(const std::string& name)
     : name(name), instructionPointer(0), totalLines(0), memorySize(0),
-    creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {}
+    creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {
+	initializeInstructionList();
+}
 
 Process::Process(const std::string& name, size_t memory)
     : name(name), instructionPointer(0), totalLines(0), memorySize(memory),
     creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {
+	initializeInstructionList();
 
+	//DEBUG: Print process creation details
     std::cout << "Process created with name: " << name << " and memory size: " << memory << std::endl;
 }
 
+void Process::initializeInstructionList() {
+    instructionList = {
+        { "PRINT", [this](const std::string& arg) { execute_print(arg, currentCoreId); } },
+        { "SLEEP", [this](const std::string& arg) { execute_sleep(arg); } },
+        { "DECLARE", [this](const std::string& arg) { execute_declare(arg); } },
+        { "ADD", [this](const std::string& arg) { execute_add(arg); } },
+        { "SUBTRACT", [this](const std::string& arg) { execute_subtract(arg); } },
+        { "FOR", [this](const std::string& arg) { execute_for(arg, currentCoreId, 1); } }
+    };
+}
 
 //------------------INSTRUCTIONS------------------//
 
@@ -138,10 +154,9 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
         execute_sleep(argument);
         instructionPointer++;
         if (instructionPointer >= totalLines) markFinished();
-    } else if (command == "FOR") {
+    }
+    else if (command == "FOR") {
         execute_for(argument, coreId, 1);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
     }
     else {
         std::cout << "Unknown command: " << command << std::endl;
@@ -160,13 +175,39 @@ void Process::execute_print(const std::string& msg, int coreId) {
         printMessage = "\"Hello world from " + name + "!\"";
     }
     else {
-        printMessage = msg + " from " + name;
+        std::string processedMsg = msg;
+
+        // Look for a "+" indicating string + variable (basic pattern only)
+        size_t plusPos = msg.find('+');
+        if (plusPos != std::string::npos) {
+            std::string strPart = msg.substr(0, plusPos);
+            std::string varPart = msg.substr(plusPos + 1);
+
+            // Trim whitespace from varPart
+            varPart.erase(0, varPart.find_first_not_of(" \t"));
+            varPart.erase(varPart.find_last_not_of(" \t") + 1);
+
+            // Remove quotes from strPart if they exist
+            if (!strPart.empty() && strPart.front() == '\"' && strPart.back() == '\"') {
+                strPart = strPart.substr(1, strPart.size() - 2);
+            }
+
+            // Look up variable in symbolTable
+            std::string varValue = "undefined";
+            auto it = symbolTable.find(varPart);
+            if (it != symbolTable.end()) {
+                varValue = std::to_string(it->second);
+            }
+
+            printMessage = varValue + " from " + name;
+        }
+        else {
+            printMessage = msg + " from " + name;
+        }
     }
 
     std::string logEntry = "[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " PRINT: " + printMessage;
     log.push_back(logEntry);
-
-    //TODO: ADD TO DEAL WITH VARIABLES
 }
 
 void Process::execute_declare(const std::string& args) {
@@ -246,7 +287,7 @@ void Process::execute_sleep(const std::string& msString) {
     std::string timestamp = get_current_timestamp();
     try {
         int ms = std::stoi(msString);
-        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + "SLEEP: Sleeping for " + std::to_string(ms) + " ms");
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " SLEEP: Sleeping for " + std::to_string(ms) + " ms");
         std::this_thread::sleep_for(std::chrono::milliseconds(ms));
     }
     catch (const std::exception& e) {
