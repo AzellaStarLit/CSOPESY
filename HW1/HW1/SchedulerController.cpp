@@ -51,7 +51,7 @@ void scheduler_start() {
 
 	int counter = 1;
 
-	generatorThread = std::thread([&]() mutable {
+	generatorThread = std::thread([=]() mutable {
 		{
 			while (generating) {
 				std::string name = "process_" + std::to_string(counter++);
