@@ -1,4 +1,7 @@
 #include "MemoryManager.h"
+#include "ProcessManager.h"
+#include "Process.h"
+
 
 #include <algorithm>
 #include <iostream>
@@ -8,6 +11,7 @@
 #include <ctime>
 #include <filesystem>
 
+extern ProcessManager processManager;
 
 MemoryManager::MemoryManager(size_t maxMem, size_t frameSz)
     : maxMemorySize(maxMem),
@@ -70,6 +74,106 @@ void MemoryManager::deallocateFrames(size_t numFrames, size_t frameIndex, const 
         else {
             ++it;
         }
+    }
+}
+
+bool MemoryManager::handlePageFault(Process* process, size_t pageNum) {
+
+    //check if already in memory
+    auto& entry = process->getPageEntry(pageNum);
+    if (entry.valid) return true;
+
+    //evict old process if no free frame [FIFO]
+    if (freeFrames.empty()) {
+
+        //FIFO algo
+        if (pageLoadOrder.empty()) {
+            std::cerr << "Error: no frame to evict and no load order tracked.\n";
+            return false;
+        }
+
+        //get the oldest [first in]
+        size_t victimFrame = pageLoadOrder.front();
+        pageLoadOrder.pop();
+
+        auto [victimPid, victimPageNum] = reversePageMap[victimFrame];
+
+        Process* victimProcess = processManager.get_process_by_pid(victimPid);
+        if (!victimProcess) return false;
+
+        //save victim data in backing store
+        auto& victimEntry = victimProcess->getPageEntry(victimPageNum);
+
+        // LOAD the requested page
+        totalPageIns++;
+        process->incrementPageIns();
+
+        if (victimEntry.dirty) {
+            std::ofstream out(victimProcess->getBackingStorePath(), std::ios::binary | std::ios::in | std::ios::out);
+            out.seekp(victimPageNum * frameSize);
+
+            std::string dummy(frameSize, '\0'); // simulate saved data
+            out.write(dummy.c_str(), frameSize);
+            out.close();
+        }
+
+        //update page table and free frame
+        victimEntry.valid = false;
+        victimEntry.frameNumber = -1;
+        memory[victimFrame].occupied = false;
+        memory[victimFrame].processId = -1;
+        freeFrames.push_back(victimFrame);
+        reversePageMap.erase(victimFrame);
+
+        //allocate freed frame to page
+        size_t frameIndex = freeFrames.back();
+        freeFrames.pop_back();
+
+        memory[frameIndex].occupied = true;
+        memory[frameIndex].processId = process->getPID();
+
+        //copy data from backing store into memory
+        std::ifstream in(process->getBackingStorePath(), std::ios::binary);
+        std::string pageData(frameSize, '\0');
+        in.seekg(pageNum * frameSize);
+        in.read(&pageData[0], frameSize);
+        in.close();
+
+        Process::PageTableEntry newEntry;
+        newEntry.valid = true;
+        newEntry.frameNumber = frameIndex;
+        newEntry.dirty = false;
+        process->pageTable[pageNum] = newEntry;
+
+        reversePageMap[frameIndex] = { process->getPID(), pageNum };
+        pageLoadOrder.push(frameIndex);
+
+        return true;
+    }
+    else {
+        //if there are still free frames, just assign
+        size_t frameIndex = freeFrames.back();
+        freeFrames.pop_back();
+
+        memory[frameIndex].occupied = true;
+        memory[frameIndex].processId = process->getPID();
+
+        std::ifstream in(process->getBackingStorePath(), std::ios::binary);
+        std::string pageData(frameSize, '\0');
+        in.seekg(pageNum * frameSize);
+        in.read(&pageData[0], frameSize);
+        in.close();
+
+        Process::PageTableEntry newEntry;
+        newEntry.valid = true;
+        newEntry.frameNumber = frameIndex;
+        newEntry.dirty = false;
+
+        process->pageTable[pageNum] = newEntry;
+        reversePageMap[frameIndex] = { process->getPID(), pageNum };
+        pageLoadOrder.push(frameIndex);
+
+        return true;
     }
 }
 

@@ -5,7 +5,10 @@
 #include <vector>
 #include <mutex>
 #include <unordered_map>
+#include "MemoryManager.h"  
 
+
+class MemoryManager;
 
 class Process {
 private:
@@ -36,6 +39,12 @@ private:
     void execute_sleep(const std::string& msString);
     void execute_for(const std::string& args, int coreId, int nestingLevel);
 
+    size_t frameSize;
+    MemoryManager* memoryManager;
+
+    size_t pageIns = 0;
+    size_t pageOuts = 0;
+
    
 public:
 
@@ -44,6 +53,8 @@ public:
 	Process(const std::string& name); //when a process is given a name
     Process(const std::string& name, int instructionCount, int pid); //when a process is given a name and instruction count
     Process(const std::string& name, size_t memory);
+    Process(const std::string& name, size_t memorySize, size_t frameSize, MemoryManager* memoryManager);
+
 
     void initializeInstructionList();
 
@@ -89,7 +100,28 @@ public:
                instructions[instructionPointer].find("SLEEP") != std::string::npos;
     }
 
+    //page table
+    struct PageTableEntry {
+        bool valid = false; //valid bits [false == not in memory; true == in memory]
+        size_t frameNumber = -1; //if valid, frame number
+        bool dirty = false; //modified?
+    };
+    std::unordered_map<size_t, PageTableEntry> pageTable; //list of page tables per process
+    PageTableEntry& getPageEntry(size_t pageNum); 
+
+    std::string backingStorePath; //backing store file for each process
+    void initializeBackingStore();
+    const std::string& getBackingStorePath() const;
+    
+    size_t getVirtualAddressForVar(const std::string& varName) const;
 
 	~Process() = default; // Default destructor
+
+    // page?fault statistics
+    void incrementPageIns() { ++pageIns; }
+    void incrementPageOuts() { ++pageOuts; }
+    size_t getPageIns()  const { return pageIns; }
+    size_t getPageOuts() const { return pageOuts; }
+
 };
 

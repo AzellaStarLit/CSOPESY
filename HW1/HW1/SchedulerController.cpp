@@ -11,9 +11,12 @@
 #include "ConfigManager.h"
 #include "Utilities.h"
 
+
 extern ProcessManager processManager;
 extern ConsoleManager consoleManager;
 extern ConfigManager configManager;
+extern std::unique_ptr<MemoryManager> memoryManager;
+
 
 //std::unique_ptr<FCFSScheduler> fcfs = nullptr;
 
@@ -31,6 +34,8 @@ void scheduler_start() {
 	const int interval = configManager.getBatchProcessFreq();
 	const size_t maxMemPerProcess = configManager.getMaxMemPerProc();
 	const size_t minMemPerProcess = configManager.getMinMemPerProc();
+	const size_t memPerFrame = configManager.getMemPerFrame();
+
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -46,35 +51,38 @@ void scheduler_start() {
 
 	int counter = 1;
 
-	generatorThread = std::thread([=]() mutable {
-		while (generating) {
-			std::string name = "process_" + std::to_string(counter++);
+	generatorThread = std::thread([&]() mutable {
+		{
+			while (generating) {
+				std::string name = "process_" + std::to_string(counter++);
 
-			{
-				std::scoped_lock lock(processManager.getMutex(), consoleManager.getMutex());
+				{
+					std::scoped_lock lock(processManager.getMutex(), consoleManager.getMutex());
 
-				int memSize = validMemSizes[memDist(gen)];
+					int memSize = validMemSizes[memDist(gen)];
 
-				processManager.create_process(name, memSize);
-				Process* p = processManager.get_process(name);
+					processManager.create_process(name, memSize, memPerFrame, memoryManager.get());
+					Process* p = processManager.get_process(name);
 
-				if (p) {
+					if (p) {
 
-					std::vector<std::string> instructions = generate_instructions();
+						std::vector<std::string> instructions = generate_instructions();
 
-					p->load_instructions(instructions);
-					consoleManager.attach_screen(name, p);
+						p->load_instructions(instructions);
+						consoleManager.attach_screen(name, p);
 
-					// Add process to scheduler!
-					if (scheduler) {
-						scheduler->add_process(p);
+						// Add process to scheduler!
+						if (scheduler) {
+							scheduler->add_process(p);
+						}
 					}
 				}
-			}
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+				std::this_thread::sleep_for(std::chrono::milliseconds(interval));
+			}
 		}
-		});
+		
+	});
 
 	std::cout << "\033[32mScheduler started. Generating processes...\033[0m\n";
 }

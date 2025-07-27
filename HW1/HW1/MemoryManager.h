@@ -2,6 +2,10 @@
 
 #include <unordered_map>
 #include <vector>
+#include "Process.h"
+#include <queue>
+
+class Process;
 
 class MemoryManager {
 private:
@@ -16,10 +20,20 @@ private:
     struct MemoryFrame {
         bool occupied = false;
         int processId = -1;
+        size_t pageNum;
     };
+
+    
+
+    std::unordered_map<size_t, std::pair<int, size_t>> reversePageMap; // frameIndex -> (pid, pageNum)
+    std::queue<size_t> pageLoadOrder; // For FIFO eviction
 
     std::vector<MemoryFrame> memory;
     std::unordered_map<int, std::pair<size_t, size_t>> processAllocations; // pid (startFrame, endFrame)
+
+    size_t totalPageIns = 0;
+    size_t totalPageOuts = 0;
+
 
 public:
     //MemoryManager();
@@ -37,4 +51,12 @@ public:
     void snapshotMemoryToFile(int quantumCycle);
     size_t calculateExternalFragmentation() const;
     size_t countProcessesInMemory() const;
+
+    // In MemoryManager.h
+    bool handlePageFault(Process* process, size_t pageNum);
+
+    // --- page?fault statistics ---
+    size_t getTotalPageIns()  const { return totalPageIns; }
+    size_t getTotalPageOuts() const { return totalPageOuts; }
+
 };

@@ -2,6 +2,7 @@
 
 #include "FCFS.h"
 #include <memory>
+#include  "MemoryManager.h"
 
 extern std::unique_ptr<FCFSScheduler> fcfs;
 

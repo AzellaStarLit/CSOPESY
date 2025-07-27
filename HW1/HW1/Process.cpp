@@ -11,6 +11,8 @@
 #include <thread>
 #include <algorithm>
 #include <random>
+#include <filesystem>
+
 
 //this is a list of instructions recognized by a process
 std::unordered_map<std::string, std::function<void(const std::string&, int)>> instructionList;
@@ -45,13 +47,15 @@ Process::Process(const std::string& name)
     creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {
 }
 
-Process::Process(const std::string& name, size_t memory)
-    : name(name), instructionPointer(0), totalLines(0), memorySize(memory),
-    creationTimestamp(get_current_timestamp()), processId(global_pid_counter++) {
+Process::Process(const std::string& name, size_t memorySize, size_t frameSize, MemoryManager* memoryManager)
+    : name(name), instructionPointer(0), totalLines(0), memorySize(memorySize),
+    creationTimestamp(get_current_timestamp()), processId(global_pid_counter++),
+    frameSize(frameSize), memoryManager(memoryManager) {
 
-	//DEBUG: Print process creation details
-    std::cout << "Process created with name: " << name << " and memory size: " << memory << std::endl;
+    std::cout << "Process created with name: " << name << " and memory size: " << memorySize << std::endl;
+    initializeBackingStore();
 }
+
 
 //------------------INSTRUCTIONS------------------//
 
@@ -200,6 +204,14 @@ void Process::execute_print(const std::string& msg, int coreId) {
 void Process::execute_declare(const std::string& args) {
     size_t comma = args.find(',');
     std::string timestamp = get_current_timestamp();
+
+    size_t virtualAddr = getVirtualAddressForVar(args);
+    size_t pageNum = virtualAddr / frameSize;
+
+    if (!pageTable[pageNum].valid) {
+        memoryManager->handlePageFault(this, pageNum); 
+    }
+
     if (comma == std::string::npos) {
         //std::cerr << "Invalid DECLARE format: " << args << "\n";
         log.push_back("[" + timestamp + "] Core "+ std::to_string(getCurrentCore()) + "DECLARE: Invalid format: " + args);
@@ -228,6 +240,13 @@ void Process::execute_add(const std::string& args) {
     getline(ss, var2, ',');
     getline(ss, var3, ',');
 
+    size_t virtualAddr = getVirtualAddressForVar(args);
+    size_t pageNum = virtualAddr / frameSize;
+
+    if (!pageTable[pageNum].valid) {
+        memoryManager->handlePageFault(this, pageNum);
+    }
+
     auto getValue = [this](const std::string& token) -> uint16_t {
         if (symbolTable.find(token) != symbolTable.end()) return symbolTable[token];
         try {
@@ -252,6 +271,13 @@ void Process::execute_subtract(const std::string& args) {
     getline(ss, var1, ',');
     getline(ss, var2, ',');
     getline(ss, var3, ',');
+
+    size_t virtualAddr = getVirtualAddressForVar(args);
+    size_t pageNum = virtualAddr / frameSize;
+
+    if (!pageTable[pageNum].valid) {
+        memoryManager->handlePageFault(this, pageNum);
+    }
 
     auto getValue = [this](const std::string& token) -> uint16_t {
         if (symbolTable.find(token) != symbolTable.end()) return symbolTable[token];
@@ -360,6 +386,34 @@ void Process::incrementInstructionPointer() {
     std::cout << name << ": instructionPointer is now " << instructionPointer << "\n";
 }
 
+//------------------BACKING STORE------------------//
+
+void Process::initializeBackingStore() {
+    std::filesystem::create_directory("csopesy-backing-store");
+
+    backingStorePath = "csopesy-backing-store/p" + std::to_string(processId) + ".txt";
+
+    std::ofstream out(backingStorePath, std::ios::binary | std::ios::trunc);
+    size_t totalPages = memorySize / frameSize; //pass as argument
+
+    for (size_t i = 0; i < totalPages; ++i) {
+        std::string blankPage(1024, '\0'); // 1 page = 1024 bytes default
+        out.write(blankPage.c_str(), 1024);
+    }
+    out.close();
+}
+
+const std::string& Process::getBackingStorePath() const {
+    return backingStorePath;
+}
+
+//------------------PAGE TABLE------------------//
+
+Process::PageTableEntry& Process::getPageEntry(size_t pageNum) {
+    return pageTable[pageNum];
+}
+
+
 //------------------DEBUG------------------//
 //for logging only
 void Process::show_log() const {
@@ -434,4 +488,11 @@ std::string Process::get_current_timestamp() const {
     std::ostringstream oss;
     oss << std::put_time(&local_tm, "%m/%d/%Y, %I:%M:%S %p");
     return oss.str();
+}
+
+//FOR SIMULATION OF VIRTUAL MEMORY ACCESS IN INSTRUCTION EXECUTION
+size_t Process::getVirtualAddressForVar(const std::string& varName) const {
+    // For simplicity: hash the varName to simulate an address
+    std::hash<std::string> hasher;
+    return hasher(varName) % memorySize;
 }

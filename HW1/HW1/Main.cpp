@@ -165,7 +165,8 @@ bool screen_command(const std::string& command) {
 		std::vector<std::string> instructions = generate_instructions();
 
 		// Create the process and load instructions
-		processManager.create_process(name, memorySize);
+		processManager.create_process(name, memorySize, configManager.getMemPerFrame(), memoryManager.get());
+		;
 		Process* p = processManager.get_process(name);
 
 		if (p) {
@@ -259,7 +260,7 @@ bool screen_command(const std::string& command) {
 		}
 
 		// Now create and register the process
-		processManager.create_process(name, memorySize);
+		processManager.create_process(name, memorySize, configManager.getMemPerFrame(), memoryManager.get());
 		Process* p = processManager.get_process(name);
 
 		if (p) {

@@ -150,29 +150,32 @@ void process_smi() {
 	const size_t columnWidthMem = 15;
 	const size_t columnWidthStat = 15;
 
-	std::cout << "\033[32m"
-		<< std::left
-		<< std::setw(columnWidthName) << "Process"
-		<< std::setw(columnWidthMem) << "Memory (KB)"
-		<< std::setw(columnWidthStat) << "Status"
+	const size_t W_NAME = 20;
+	const size_t W_MEM = 12;
+	const size_t W_PGIN = 10;
+	const size_t W_PGOUT = 10;
+	const size_t W_STAT = 12;
+
+	std::cout << "\033[32m" << std::left
+		<< std::setw(W_NAME) << "Process"
+		<< std::setw(W_MEM) << "Mem(KB)"
+		<< std::setw(W_PGIN) << "PgIn"
+		<< std::setw(W_PGOUT) << "PgOut"
+		<< std::setw(W_STAT) << "Status"
 		<< "\033[0m\n"
-		<< std::string(50, '-') << "\n";
+		<< std::string(W_NAME + W_MEM + W_PGIN + W_PGOUT + W_STAT, '-') << "\n";
 
-	for (auto* process : allProcesses) {
-		size_t memUsage = process->getMemoryUsage();
-		totalUsedMemory += memUsage;
-
+	for (auto* p : allProcesses)
+	{
 		std::cout << std::left
-			<< std::setw(columnWidthName) << process->getName()
-			<< std::setw(columnWidthMem) << memUsage;
+			<< std::setw(W_NAME) << p->getName()
+			<< std::setw(W_MEM) << p->getMemoryUsage()
+			<< std::setw(W_PGIN) << p->getPageIns()
+			<< std::setw(W_PGOUT) << p->getPageOuts();
 
-		if (process->isFinished()) {
-			std::cout << std::setw(columnWidthStat) << "\033[32mFinished\033[0m";
-		}
-		else {
-			std::cout << std::setw(columnWidthStat) << "\033[33mRunning\033[0m";
-		}
-		std::cout << "\n";
+		std::string state = p->isFinished() ? "Finished"
+			: (p->isSleeping() ? "Sleeping" : "Running");
+		std::cout << std::setw(W_STAT) << state << "\n";
 	}
 
 	std::cout << "\n\033[32m"
@@ -206,9 +209,10 @@ void vmstat() {
 		<< "  Used: " << used << "\n"
 		<< "  Free: " << (total - used) << "\n";
 
-	std::cout << "\n\033[32mPages:\033\[0m\n"
-		<< "  Page-ins : N/A\n"
-		<< "  Page-outs: N/A\n\n";
+	std::cout << "\n\033[32mPages:\033[0m\n"
+		<< "  Page?ins : " << memoryManager->getTotalPageIns() << "\n"
+		<< "  Page?outs: " << memoryManager->getTotalPageOuts() << "\n\n";
+
 }
 /*****************************
 	HELPER FUNCTIONS

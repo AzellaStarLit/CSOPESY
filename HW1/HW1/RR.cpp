@@ -51,82 +51,78 @@ Process* RRScheduler::get_next_process() {
 	return nullptr;
 } 
 
-void RRScheduler::worker_loop(int coreId) {
-	while (isRunning) {
-		Process* process = nullptr;
 
-		{
-			std::unique_lock<std::mutex> lock(queueMutex);
-			cv.wait(lock, [&]() { return !readyQueue.empty() || !isRunning; });
+void RRScheduler::worker_loop(int coreId)
+{
+    while (isRunning)
+    {
+        Process* p = nullptr;
 
-			if (!isRunning && readyQueue.empty()) return;
+        /* -- pick a PCB --------------------------------------------------- */
+        {
+            std::unique_lock<std::mutex> lk(queueMutex);
+            cv.wait(lk, [&] { return !readyQueue.empty() || !isRunning; });
+            if (!isRunning) return;                 // shutting down
 
-			process = readyQueue.front();
-			readyQueue.pop();
-		}
+            p = readyQueue.front();
+            readyQueue.pop();
+        }
 
-		if (process && !process->isFinished()) {
-			int pid = process->getPID();
-			if (memPerFrame == 0) {
-				std::cerr << "[RR] Error: memPerFrame is 0!\n";
-				exit(1);
-			}
-			size_t framesNeeded = memPerProc / memPerFrame;
+        if (!p || p->isFinished())
+            continue;                               // nothing to do
 
-			bool alreadyInMemory = memoryManager->getProcessStartFrame(pid) != static_cast<size_t>(-1);
-			if (!alreadyInMemory) {
-				bool allocated = memoryManager->allocateFrames(framesNeeded, pid, {});
-				if (!allocated) {
-					// Not enough memory: return process to queue
-					//std::cout << "\033[33m[Core " << coreId << "] Memory full for PID " << pid << ". Returning to queue.\033[0m\n";
-					add_process(process);
-					continue;
-				}
-			}
+        /* -- memory admission --------------------------------------------- */
+        if (!memoryManager) {                       // still not configured?
+            add_process(p);                         // give it back
+            std::this_thread::yield();
+            continue;
+        }
 
+        std::size_t bytesNeeded = p->getMemoryUsage();
+        std::size_t framesNeeded = (bytesNeeded + memPerFrame - 1) / memPerFrame;
 
-			{
-				std::lock_guard<std::mutex> statsLock(statsMutex);
-				coreActive[coreId] = true;
-			}
-			process->setCurrentCore(coreId);
+        const int pid = p->getPID();
+        bool resident = memoryManager->getProcessStartFrame(pid) != std::size_t(-1);
 
-			for (int i = 0;  i < timeQuantum; ++i) {
-				if (process->isFinished()) break;
+        if (!resident &&                                  // not in RAM _and_
+            !memoryManager->allocateFrames(framesNeeded, pid, {})) {
+            add_process(p);                // push to the tail
+            std::this_thread::yield();     // let another core run
+            continue;                      // pick a different PCB
+        }
 
-				std::string instruction = process->getCurrentInstruction();
-				process->execute_instruction(instruction, coreId);
-				//std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        /* -- run one quantum ---------------------------------------------- */
+        {
+            std::lock_guard<std::mutex> g(statsMutex);
+            coreActive[coreId] = true;
+        }
+        p->setCurrentCore(coreId);
 
-				//delay per execution
-				uint32_t delay = getDelayPerExec();
-				if (delay > 0) {
-					std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-				}
-			}
+        for (int i = 0; i < timeQuantum && !p->isFinished(); ++i) {
+            p->execute_instruction(p->getCurrentInstruction(), coreId);
+            if (auto d = getDelayPerExec(); d)
+                std::this_thread::sleep_for(std::chrono::milliseconds(d));
+        }
 
-			{
-				std::lock_guard<std::mutex> lock(fileMutex); // prevent file clashes from multiple threads
-				quantumCycleCounter++;
+        /* -- bookkeeping --------------------------------------------------- */
+        {
+            std::lock_guard<std::mutex> g(fileMutex);
+            if (++quantumCycleCounter % timeQuantum == 0)
+                memoryManager->snapshotMemoryToFile(quantumCycleCounter);
+        }
 
-				if (quantumCycleCounter % timeQuantum == 0) {
-					memoryManager->snapshotMemoryToFile(quantumCycleCounter);
-				}
-			}
+        if (p->isFinished()) {
+            p->markFinished();
+            if (auto sf = memoryManager->getProcessStartFrame(pid); sf != std::size_t(-1))
+                memoryManager->deallocateFrames(framesNeeded, sf, {});
+        }
+        else {
+            add_process(p);                           // round?robin: back to tail
+        }
 
-			if (!process->isFinished()) {
-				add_process(process); //back to queue
-			}
-			else {
-				process->markFinished();
-				size_t startFrame = memoryManager->getProcessStartFrame(pid);
-				memoryManager->deallocateFrames(framesNeeded, startFrame, {});
-			}
-
-			{
-				std::lock_guard<std::mutex> statsLock(statsMutex);
-				coreActive[coreId] = false;
-			}
-		}
-	}
+        {
+            std::lock_guard<std::mutex> g(statsMutex);
+            coreActive[coreId] = false;
+        }
+    }
 }

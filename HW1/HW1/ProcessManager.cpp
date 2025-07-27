@@ -15,9 +15,9 @@ void ProcessManager::create_process(const std::string& name) {
     }
 }
 
-void ProcessManager::create_process(const std::string& name, size_t processMemory) {
+void ProcessManager::create_process(const std::string& name, size_t memorySize, size_t frameSize, MemoryManager* memoryManager) {
     if (!exists(name)) {
-        processes.try_emplace(name, name, processMemory);
+        processes.try_emplace(name, name, memorySize, frameSize, memoryManager);
         //std::cout << "Process '" << name << "' created.\n";
     }
     else {
@@ -69,4 +69,10 @@ size_t ProcessManager::getUsedMemory() const {
 }
 
 
-
+Process* ProcessManager::get_process_by_pid(int pid) {
+    for (auto& [name, proc] : processes) {
+        if (proc.getPID() == pid)
+            return &proc;
+    }
+    return nullptr;
+}

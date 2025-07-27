@@ -17,7 +17,8 @@ private:
 
 public:
     void create_process(const std::string& name);
-    void create_process(const std::string& name, size_t processMemory);
+    void create_process(const std::string& name, size_t memorySize, size_t frameSize, MemoryManager* memoryManager);
+
 
     Process* get_process(const std::string& name);
     bool exists(const std::string& name) const;
@@ -28,5 +29,6 @@ public:
     std::mutex& getMutex();
     size_t get_process_count() const;
 
+    Process* get_process_by_pid(int pid);
 
 };

@@ -12,6 +12,7 @@
 #include <condition_variable>
 #include <chrono>
 #include <iostream>
+class MemoryManager;
 
 class RRScheduler : public Scheduler {
 private:
