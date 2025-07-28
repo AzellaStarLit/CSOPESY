@@ -25,8 +25,9 @@ MemoryManager::MemoryManager(size_t maxMem, size_t frameSz)
     }
 }
 
-bool MemoryManager::allocateFrames(size_t numFrames, size_t processId, const std::vector<size_t>&) {
+bool MemoryManager::allocateFrames(size_t numFrames, size_t processId, const std::vector<size_t>& pageSize) {
 
+    
     if (freeFrames.size() < numFrames) return false;
 
     size_t consecutive = 0; //consecutive free frames
@@ -38,6 +39,9 @@ bool MemoryManager::allocateFrames(size_t numFrames, size_t processId, const std
             if (consecutive == 0) startIndex = i;
             ++consecutive;
 
+            if (consecutive == numFrames) break;
+
+            /*
             //when you have enough frames
             if (consecutive == numFrames) {
                 for (size_t j = startIndex; j < startIndex + numFrames; ++j) {
@@ -48,19 +52,39 @@ bool MemoryManager::allocateFrames(size_t numFrames, size_t processId, const std
 
                 processAllocations[processId] = { startIndex, startIndex + numFrames - 1 };
                 return true;
-            }
+            }*/
         }
         else {
             consecutive = 0;
         }
     }
 
-    return false;
+    if (consecutive < numFrames) return false; 
+
+    for (size_t j = startIndex; j < startIndex + numFrames; ++j) {
+        memory[j].occupied = true;
+        memory[j].processId = processId;
+
+        reversePageMap[j] = { processId, 0 };
+        pageLoadOrder.push(j);
+    }
+    processAllocations[processId] = { startIndex, startIndex + numFrames - 1 };
+
+    auto isTaken = [startIndex, numFrames](size_t idx) {
+        return idx >= startIndex && idx < startIndex + numFrames;
+    };
+
+    freeFrames.erase(std::remove_if(freeFrames.begin(),
+        freeFrames.end(), isTaken),
+        freeFrames.end());
+
+    return true;
 }
 
 
-void MemoryManager::deallocateFrames(size_t numFrames, size_t frameIndex, const std::vector<size_t>&) {
+void MemoryManager::deallocateFrames(size_t numFrames, size_t frameIndex, const std::vector<size_t>& pageSize) {
 
+    /*
     for (size_t i = frameIndex; i < frameIndex + numFrames && i < memory.size(); ++i) {
         memory[i].occupied = false;
         memory[i].processId = -1;
@@ -74,7 +98,28 @@ void MemoryManager::deallocateFrames(size_t numFrames, size_t frameIndex, const 
         else {
             ++it;
         }
+    }*/
+
+    for (size_t f = frameIndex; f < frameIndex + numFrames && f < memory.size();
+        ++f) {
+        memory[f].occupied = false;
+        memory[f].processId = -1;
+        freeFrames.push_back(f);
+
+        reversePageMap.erase(f);
     }
+
+    for (auto it = processAllocations.begin();
+        it != processAllocations.end(); ) {
+        if (it->second.first == frameIndex)
+            it = processAllocations.erase(it);
+        else
+            ++it;
+    }
+
+    while (!pageLoadOrder.empty() &&
+        !memory[pageLoadOrder.front()].occupied)
+        pageLoadOrder.pop();
 }
 
 bool MemoryManager::handlePageFault(Process* process, size_t pageNum) {
@@ -115,6 +160,9 @@ bool MemoryManager::handlePageFault(Process* process, size_t pageNum) {
             std::string dummy(frameSize, '\0'); // simulate saved data
             out.write(dummy.c_str(), frameSize);
             out.close();
+
+            ++totalPageOuts;
+            victimProcess->incrementPageOuts();
         }
 
         //update page table and free frame
@@ -279,4 +327,15 @@ void MemoryManager::snapshotMemoryToFile(int quantumCycle) {
     }
 
     out << "----start----- = 0\n";
+}
+
+// MemoryManager.cpp
+size_t MemoryManager::getUsedFrames() const
+{
+    return numFrames - freeFrames.size();
+}
+
+size_t MemoryManager::getFreeFrames() const
+{
+    return freeFrames.size();
 }

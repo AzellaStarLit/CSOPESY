@@ -55,8 +55,14 @@ public:
     // In MemoryManager.h
     bool handlePageFault(Process* process, size_t pageNum);
 
-    // --- page?fault statistics ---
+    // --- pagefault statistics ---
     size_t getTotalPageIns()  const { return totalPageIns; }
     size_t getTotalPageOuts() const { return totalPageOuts; }
+
+    // MemoryManager.h
+    size_t getUsedFrames()  const;   // already?allocated frames
+    size_t getFreeFrames()  const;   // convenience
+    size_t getFrameSize()   const { return frameSize; }   // inline
+
 
 };

@@ -25,7 +25,7 @@ private:
 	std::condition_variable cv;
 
 	MemoryManager* memoryManager = nullptr;
-	size_t memPerProc = 0;
+	//size_t memPerProc = 0;
 	size_t memPerFrame = 0;
 
 	int quantumCycleCounter = 0; // tracks the number of cycles
@@ -33,7 +33,7 @@ private:
 
 public:
 	//TODO: Edit so that memory can handle processes with different memory requirements
-	RRScheduler(int cores, int quantum, size_t memProc, size_t memFrame) : Scheduler(cores), timeQuantum(quantum), memPerProc(memProc), memPerFrame(memFrame) {}
+	RRScheduler(int cores, int quantum, size_t memFrame) : Scheduler(cores), timeQuantum(quantum), memPerFrame(memFrame) {}
 	~RRScheduler() {
 		stop();
 		for (auto& t : workers) {

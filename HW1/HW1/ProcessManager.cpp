@@ -1,5 +1,6 @@
 #include "ProcessManager.h"
 #include "ConsoleManager.h"
+#include "MemoryManager.h"  
 #include <iostream>
 #include <unordered_map>
 #include <random>
@@ -61,11 +62,15 @@ std::vector<Process*> ProcessManager::getAllProcesses() const{
 
 //Memory for process-smi and vmstat in the main menu
 size_t ProcessManager::getUsedMemory() const {
+   /*
     size_t total = 0;
     for (const auto& [_, process] : processes) {
         total += process.getMemoryUsage();
     }
-    return total;
+    return total;*/
+
+    return memMgr ? memMgr->getUsedFrames() * memMgr->getFrameSize()
+        : 0;
 }
 
 

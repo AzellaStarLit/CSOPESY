@@ -1,4 +1,4 @@
-#include "Utilities.h"
+﻿#include "Utilities.h"
 #include "ProcessManager.h"
 #include "FCFS.h"
 #include "ConfigManager.h"
@@ -59,6 +59,9 @@ void initialize() { // intializer logic
 			configManager.getMaxOverallMem(),
 			configManager.getMemPerFrame()
 		);
+
+		processManager.setMemoryManager(memoryManager.get());
+
 
 		isInitialized = true;
 		std::cout << "\033[32mInitialization complete.\033[0m\n";
@@ -199,21 +202,17 @@ void vmstat() {
 	size_t used = processManager.getUsedMemory();
 	size_t total = configManager.getMaxOverallMem();
 
-	std::cout << "\n\033[32mProcesses:\033[0m\n"
-		<< "  Running : " << running << "\n"
-		<< "  Sleeping: " << sleeping << "\n"
-		<< "  Finished: " << finished << "\n"
-		<< "  Total   : " << (running + sleeping + finished) << "\n";
-
 	std::cout << "\n\033[32mMemory (KB):\033[0m\n"
 		<< "  Used: " << used << "\n"
 		<< "  Free: " << (total - used) << "\n";
 
+	/* page‑in/out counters */
 	std::cout << "\n\033[32mPages:\033[0m\n"
-		<< "  Page?ins : " << memoryManager->getTotalPageIns() << "\n"
-		<< "  Page?outs: " << memoryManager->getTotalPageOuts() << "\n\n";
+		<< "  Page-ins : " << memoryManager->getTotalPageIns() << '\n'
+		<< "  Page-outs: " << memoryManager->getTotalPageOuts() << "\n\n";
 
 }
+
 /*****************************
 	HELPER FUNCTIONS
 ******************************/

@@ -3,10 +3,12 @@
 #include <unordered_map>
 #include <vector>
 #include <mutex>
+#include "MemoryManager.h"
 
 #include "Process.h"
 
 class ConsoleManager;
+class MemoryManager;
 
 class ProcessManager {
 private:
@@ -14,6 +16,8 @@ private:
     //this is a list of all the processes [name, process]
     std::unordered_map<std::string, Process> processes;
     mutable std::mutex processMutex;
+
+    MemoryManager* memMgr = nullptr;
 
 public:
     void create_process(const std::string& name);
@@ -30,5 +34,6 @@ public:
     size_t get_process_count() const;
 
     Process* get_process_by_pid(int pid);
+    void setMemoryManager(MemoryManager* m) { memMgr = m; }
 
 };

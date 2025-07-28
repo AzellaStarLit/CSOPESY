@@ -54,70 +54,67 @@ Process* RRScheduler::get_next_process() {
 
 void RRScheduler::worker_loop(int coreId)
 {
-    while (isRunning)
-    {
-        Process* p = nullptr;
+    while (isRunning) {
+        Process* process = nullptr;
 
-        /* -- pick a PCB --------------------------------------------------- */
+        /* --------- pick a PCB --------- */
         {
-            std::unique_lock<std::mutex> lk(queueMutex);
-            cv.wait(lk, [&] { return !readyQueue.empty() || !isRunning; });
-            if (!isRunning) return;                 // shutting down
+            std::unique_lock<std::mutex> lock(queueMutex);
+            cv.wait(lock, [&] { return !readyQueue.empty() || !isRunning; });
+            if (!isRunning && readyQueue.empty()) return;
 
-            p = readyQueue.front();
+            process = readyQueue.front();
             readyQueue.pop();
         }
 
-        if (!p || p->isFinished())
-            continue;                               // nothing to do
-
-        /* -- memory admission --------------------------------------------- */
-        if (!memoryManager) {                       // still not configured?
-            add_process(p);                         // give it back
-            std::this_thread::yield();
+        if (!process || process->isFinished())   // double check
             continue;
+
+        /* --------- memory admission --------- */
+        size_t bytesNeeded = process->getMemoryUsage();
+        size_t framesNeeded = (bytesNeeded + memPerFrame - 1) / memPerFrame;
+        framesNeeded = std::max<size_t>(1, framesNeeded);
+
+        int    pid = process->getPID();
+        bool   resident = memoryManager->getProcessStartFrame(pid) != size_t(-1);
+
+        if (!resident && !memoryManager->allocateFrames(framesNeeded, pid, {})) {
+            add_process(process);       // push to back
+            std::this_thread::yield();  // give other cores a chance
+            continue;                   // try another PCB
         }
 
-        std::size_t bytesNeeded = p->getMemoryUsage();
-        std::size_t framesNeeded = (bytesNeeded + memPerFrame - 1) / memPerFrame;
-
-        const int pid = p->getPID();
-        bool resident = memoryManager->getProcessStartFrame(pid) != std::size_t(-1);
-
-        if (!resident &&                                  // not in RAM _and_
-            !memoryManager->allocateFrames(framesNeeded, pid, {})) {
-            add_process(p);                // push to the tail
-            std::this_thread::yield();     // let another core run
-            continue;                      // pick a different PCB
-        }
-
-        /* -- run one quantum ---------------------------------------------- */
+        /* --------- run one quantum --------- */
         {
             std::lock_guard<std::mutex> g(statsMutex);
             coreActive[coreId] = true;
         }
-        p->setCurrentCore(coreId);
+        process->setCurrentCore(coreId);
 
-        for (int i = 0; i < timeQuantum && !p->isFinished(); ++i) {
-            p->execute_instruction(p->getCurrentInstruction(), coreId);
-            if (auto d = getDelayPerExec(); d)
-                std::this_thread::sleep_for(std::chrono::milliseconds(d));
+        for (int i = 0; i < timeQuantum && !process->isFinished(); ++i) {
+            process->execute_instruction(process->getCurrentInstruction(), coreId);
+            if (uint32_t d = getDelayPerExec(); d) std::this_thread::sleep_for(std::chrono::milliseconds(d));
         }
 
-        /* -- bookkeeping --------------------------------------------------- */
+        /* --------- bookkeeping --------- */
         {
             std::lock_guard<std::mutex> g(fileMutex);
             if (++quantumCycleCounter % timeQuantum == 0)
                 memoryManager->snapshotMemoryToFile(quantumCycleCounter);
         }
 
-        if (p->isFinished()) {
-            p->markFinished();
-            if (auto sf = memoryManager->getProcessStartFrame(pid); sf != std::size_t(-1))
-                memoryManager->deallocateFrames(framesNeeded, sf, {});
+        if (process->isFinished()) {
+            process->markFinished();
+
+            /* free its last resident frame(s) --------------------------- */
+            size_t bytes = process->getMemoryUsage();
+            size_t frames = std::max<size_t>(1, (bytes + memPerFrame - 1) / memPerFrame);
+            size_t start = memoryManager->getProcessStartFrame(process->getPID());
+            if (start != size_t(-1))
+                memoryManager->deallocateFrames(frames, start, {});
         }
         else {
-            add_process(p);                           // round?robin: back to tail
+            add_process(process);       // round?robin back to tail
         }
 
         {
@@ -126,3 +123,4 @@ void RRScheduler::worker_loop(int coreId)
         }
     }
 }
+
