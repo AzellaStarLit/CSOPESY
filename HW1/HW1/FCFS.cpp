@@ -5,7 +5,12 @@
 #include <thread>
 
 //constructor
-FCFSScheduler::FCFSScheduler(int cores) : Scheduler(cores){}
+FCFSScheduler::FCFSScheduler(int cores,
+							size_t framesSz,
+							MemoryManager* memMgr) 
+	: Scheduler(cores),
+	  memoryManager(memMgr),
+	  memPerFrame(framesSz){}
 
 //start the algorithm
 void FCFSScheduler::start() {
@@ -32,6 +37,44 @@ void FCFSScheduler::worker_loop(int coreId) {
 			readyQueue.pop();
 		}
 
+		if (!process || process->isFinished()) continue;
+
+		size_t bytesNeeded = process->getMemoryUsage();
+		size_t framesNeeded = std::max<size_t>(1,
+			(bytesNeeded + memPerFrame - 1) / memPerFrame);
+
+		bool resident = memoryManager->getProcessStartFrame(process->getPID())
+			!= size_t(-1);
+
+		if (!resident && !memoryManager->allocateFrames(framesNeeded, process->getPID(), {})) {
+			add_process(process);
+			std::this_thread::yield();
+			continue;
+		}
+
+		{
+			std::lock_guard<std::mutex> statsLock(statsMutex);
+			coreActive[coreId] = true; // mark this core as active
+		}
+		process->setCurrentCore(coreId); //set the current core executing this process
+
+		while (!process->isFinished()) {
+			process->execute_instruction(process->getCurrentInstruction(), coreId);
+			if (uint32_t d = getDelayPerExec(); d)
+				std::this_thread::sleep_for(std::chrono::milliseconds(d));
+		}
+
+		{
+			std::lock_guard<std::mutex> statsLock(statsMutex);
+			coreActive[coreId] = false;
+		}
+		process->markFinished();
+
+		size_t startframe = memoryManager->getProcessStartFrame(process->getPID());
+		if (startframe != size_t(-1))
+			memoryManager->deallocateFrames(framesNeeded, startframe, {});
+
+		/*
 		if (process && !process->isFinished()) {
 
 			{
@@ -62,8 +105,7 @@ void FCFSScheduler::worker_loop(int coreId) {
 			{
 				std::lock_guard<std::mutex> statsLock(statsMutex);
 				coreActive[coreId] = false; // mark this core as available
-			}
-		}
+			}*/
 	}
 }
 

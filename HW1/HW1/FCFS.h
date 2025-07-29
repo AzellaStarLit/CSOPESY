@@ -2,6 +2,7 @@
 
 #include "BaseScheduler.h"
 #include "Process.h"
+#include "MemoryManager.h"
 
 #include <vector>
 #include <thread>
@@ -12,13 +13,15 @@
 class FCFSScheduler : public Scheduler {
 public:
 	//constructor
-	FCFSScheduler(int cores);
+	FCFSScheduler(int cores, size_t frameSz, MemoryManager* memMgr);
 
 	void start() override; //start the algo
 	void stop() override; //stop and join threads
 
 	Process* get_next_process() override;
 	void add_process(Process* p) override;
+
+	void setMemoryManager(MemoryManager* mgr) { memoryManager = mgr; }
 
 private:
 	//worker thread loop for each core
@@ -28,5 +31,8 @@ private:
 	//mutex and cv for snychronization
 	std::mutex queueMutex;
 	std::condition_variable cv;
+
+	MemoryManager* memoryManager = nullptr;
+	size_t memPerFrame = 0; 
 
 };

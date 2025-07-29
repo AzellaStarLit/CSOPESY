@@ -344,7 +344,7 @@ void exit_program() {
 
 				//this checks for the algorithms to use
 				if (algo == "fcfs") {
-					scheduler = std::make_unique<FCFSScheduler>(cores);
+					scheduler = std::make_unique<FCFSScheduler>(cores, memPerFrame, memoryManager.get());
 				}
 				else if (algo == "rr") {
 					//TODO: Edit to not be hardcoded

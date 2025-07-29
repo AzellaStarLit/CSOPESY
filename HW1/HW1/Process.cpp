@@ -52,7 +52,7 @@ Process::Process(const std::string& name, size_t memorySize, size_t frameSize, M
     creationTimestamp(get_current_timestamp()), processId(global_pid_counter++),
     frameSize(frameSize), memoryManager(memoryManager) {
 
-    std::cout << "Process created with name: " << name << " and memory size: " << memorySize << std::endl;
+    //std::cout << "Process created with name: " << name << " and memory size: " << memorySize << std::endl;
     initializeBackingStore();
 }
 

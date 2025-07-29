@@ -56,8 +56,8 @@ void scheduler_start() {
 			while (generating) {
 				std::string name = "process_" + std::to_string(counter++);
 
-				{
-					std::scoped_lock lock(processManager.getMutex(), consoleManager.getMutex());
+				//{
+					//std::scoped_lock lock(processManager.getMutex(), consoleManager.getMutex());
 
 					int memSize = validMemSizes[memDist(gen)];
 
@@ -76,7 +76,7 @@ void scheduler_start() {
 							scheduler->add_process(p);
 						}
 					}
-				}
+				//}
 
 				std::this_thread::sleep_for(std::chrono::milliseconds(interval));
 			}
