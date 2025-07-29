@@ -20,6 +20,8 @@ void ProcessManager::create_process(const std::string& name) {
 void ProcessManager::create_process(const std::string& name, size_t memorySize, size_t frameSize, MemoryManager* memoryManager) {
 
     std::lock_guard<std::mutex> lock(processMutex);
+
+    /*
     auto it = processes.find(name);
 
     if (it == processes.end()) {
@@ -29,7 +31,22 @@ void ProcessManager::create_process(const std::string& name, size_t memorySize, 
     }
     else {
         std::cout << "Process '" << name << "' already exists.\n";
+    }*/
+
+    if (processes.find(name) != processes.end()) {
+        std::cout << "Process '" << name << "' already exists.\n";
+        return;
     }
+
+    auto [it, ok] = processes.emplace(std::piecewise_construct,
+        std::forward_as_tuple(name),
+        std::forward_as_tuple(name, memorySize, frameSize, memoryManager));
+
+    if (!ok) return;
+
+    Process& p = it->second;
+    size_t pages = std::max<size_t>(1, (memorySize + frameSize - 1) / frameSize);
+    if (memMgr) memMgr->registerProcessSwap(p.getPID(), pages);
 
     /*
     if (!exists(name)) {

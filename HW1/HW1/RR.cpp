@@ -69,20 +69,14 @@ void RRScheduler::worker_loop(int coreId)
 
         if (!process || process->isFinished())   // double check
             continue;
-
-        /* --------- memory admission --------- */
-        size_t bytesNeeded = process->getMemoryUsage();
-        size_t framesNeeded = (bytesNeeded + memPerFrame - 1) / memPerFrame;
-        framesNeeded = std::max<size_t>(1, framesNeeded);
-
-        int    pid = process->getPID();
-        bool   resident = memoryManager->getProcessStartFrame(pid) != size_t(-1);
-
-        if (!resident && !memoryManager->allocateFrames(framesNeeded, pid, {})) {
-            add_process(process);       // push to back
-            std::this_thread::yield();  // give other cores a chance
-            continue;                   // try another PCB
+        
+        if (!process->hasResidentPage() && memoryManager->getFreeFrames() == 0) {
+            add_process(process);                   // push back to the queue
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            continue;                               // try another PCB
         }
+
+
 
         /* --------- run one quantum --------- */
         {
@@ -106,12 +100,12 @@ void RRScheduler::worker_loop(int coreId)
         if (process->isFinished()) {
             process->markFinished();
 
-            /* free its last resident frame(s) --------------------------- */
+            /* free its last resident frame(s) --------------------------- 
             size_t bytes = process->getMemoryUsage();
             size_t frames = std::max<size_t>(1, (bytes + memPerFrame - 1) / memPerFrame);
             size_t start = memoryManager->getProcessStartFrame(process->getPID());
             if (start != size_t(-1))
-                memoryManager->deallocateFrames(frames, start, {});
+                memoryManager->deallocateFrames(frames, start, {});*/
         }
         else {
             add_process(process);       // round?robin back to tail

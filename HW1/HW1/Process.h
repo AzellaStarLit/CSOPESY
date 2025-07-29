@@ -123,5 +123,6 @@ public:
     size_t getPageIns()  const { return pageIns; }
     size_t getPageOuts() const { return pageOuts; }
 
+    bool hasResidentPage() const;
 };
 

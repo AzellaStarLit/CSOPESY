@@ -407,6 +407,14 @@ const std::string& Process::getBackingStorePath() const {
     return backingStorePath;
 }
 
+bool Process::hasResidentPage() const {
+    for (const auto& kv : pageTable) {
+        if (kv.second.valid) return true;
+    }
+    return false;
+}
+
+
 //------------------PAGE TABLE------------------//
 
 Process::PageTableEntry& Process::getPageEntry(size_t pageNum) {

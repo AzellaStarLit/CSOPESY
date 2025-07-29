@@ -1,7 +1,6 @@
 #include "MemoryManager.h"
-#include "ProcessManager.h"
 #include "Process.h"
-
+#include "ProcessManager.h"
 
 #include <algorithm>
 #include <iostream>
@@ -10,6 +9,7 @@
 #include <iomanip>
 #include <ctime>
 #include <filesystem>
+#include <cstring>  // std::memset
 
 extern ProcessManager processManager;
 
@@ -19,216 +19,110 @@ MemoryManager::MemoryManager(size_t maxMem, size_t frameSz)
     numFrames((frameSz == 0) ? 0 : maxMem / frameSz)
 {
     memory.resize(numFrames);
-
     for (size_t i = 0; i < numFrames; ++i) {
         freeFrames.push_back(i);
     }
+
+    // single backing store
+    swapfile.open(swapFilePath, std::ios::in | std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!swapfile.is_open()) {
+        std::ofstream create(swapFilePath, std::ios::binary);
+        create.close();
+        swapfile.open(swapFilePath, std::ios::in | std::ios::out | std::ios::binary);
+    }
+    swapfile.seekp(0, std::ios::end);
+    swapFileBytes = static_cast<size_t>(swapfile.tellp());
+    if (!swapfile) swapfile.clear();
 }
 
-bool MemoryManager::allocateFrames(size_t numFrames, size_t processId, const std::vector<size_t>& pageSize) {
+// -------------------------- Demand paging -------------------------- //
 
-    
-    if (freeFrames.size() < numFrames) return false;
+bool MemoryManager::handlePageFault(Process* process, size_t pageNum)
+{
+    // Serialize in-memory MM state
+    std::lock_guard<std::mutex> mmLock(mmMutex);
 
-    size_t consecutive = 0; //consecutive free frames
-    size_t startIndex = 0; //start of free frames
-
-    for (size_t i = 0; i < memory.size(); i++) {
-
-        if (!memory[i].occupied) {
-            if (consecutive == 0) startIndex = i;
-            ++consecutive;
-
-            if (consecutive == numFrames) break;
-
-            /*
-            //when you have enough frames
-            if (consecutive == numFrames) {
-                for (size_t j = startIndex; j < startIndex + numFrames; ++j) {
-                    memory[j].occupied = true;
-                    memory[j].processId = processId;
-                    freeFrames.erase(std::remove(freeFrames.begin(), freeFrames.end(), j), freeFrames.end());
-                }
-
-                processAllocations[processId] = { startIndex, startIndex + numFrames - 1 };
-                return true;
-            }*/
-        }
-        else {
-            consecutive = 0;
-        }
-    }
-
-    if (consecutive < numFrames) return false; 
-
-    for (size_t j = startIndex; j < startIndex + numFrames; ++j) {
-        memory[j].occupied = true;
-        memory[j].processId = processId;
-
-        reversePageMap[j] = { processId, 0 };
-        pageLoadOrder.push(j);
-    }
-    processAllocations[processId] = { startIndex, startIndex + numFrames - 1 };
-
-    auto isTaken = [startIndex, numFrames](size_t idx) {
-        return idx >= startIndex && idx < startIndex + numFrames;
-    };
-
-    freeFrames.erase(std::remove_if(freeFrames.begin(),
-        freeFrames.end(), isTaken),
-        freeFrames.end());
-
-    return true;
-}
-
-
-void MemoryManager::deallocateFrames(size_t numFrames, size_t frameIndex, const std::vector<size_t>& pageSize) {
-
-    /*
-    for (size_t i = frameIndex; i < frameIndex + numFrames && i < memory.size(); ++i) {
-        memory[i].occupied = false;
-        memory[i].processId = -1;
-        freeFrames.push_back(i);
-    }
-
-    for (auto it = processAllocations.begin(); it != processAllocations.end(); ) {
-        if (it->second.first == frameIndex) {
-            it = processAllocations.erase(it);
-        }
-        else {
-            ++it;
-        }
-    }*/
-
-    for (size_t f = frameIndex; f < frameIndex + numFrames && f < memory.size();
-        ++f) {
-        memory[f].occupied = false;
-        memory[f].processId = -1;
-        freeFrames.push_back(f);
-
-        reversePageMap.erase(f);
-    }
-
-    for (auto it = processAllocations.begin();
-        it != processAllocations.end(); ) {
-        if (it->second.first == frameIndex)
-            it = processAllocations.erase(it);
-        else
-            ++it;
-    }
-
-    while (!pageLoadOrder.empty() &&
-        !memory[pageLoadOrder.front()].occupied)
-        pageLoadOrder.pop();
-}
-
-bool MemoryManager::handlePageFault(Process* process, size_t pageNum) {
-
-    //check if already in memory
+    // already resident?
     auto& entry = process->getPageEntry(pageNum);
     if (entry.valid) return true;
 
-    //evict old process if no free frame [FIFO]
-    if (freeFrames.empty()) {
+    auto load_into_frame = [&](size_t frameIndex) {
+        memory[frameIndex].occupied = true;
+        memory[frameIndex].processId = process->getPID();
 
-        //FIFO algo
+        std::string pageData(frameSize, '\0');
+        {
+            std::lock_guard<std::mutex> swLock(swapMutex);
+            readPage_nolock(process->getPID(), pageNum, pageData.data());
+        }
+
+        ++totalPageIns;
+        process->incrementPageIns();
+
+        entry.valid = true;
+        entry.frameNumber = frameIndex;
+        entry.dirty = false;
+
+        reversePageMap[frameIndex] = { process->getPID(), pageNum };
+        pageLoadOrder.push(frameIndex);
+        };
+
+    size_t targetFrame = SIZE_MAX;
+
+    if (freeFrames.empty())
+    {
         if (pageLoadOrder.empty()) {
             std::cerr << "Error: no frame to evict and no load order tracked.\n";
             return false;
         }
 
-        //get the oldest [first in]
+        // FIFO eviction
         size_t victimFrame = pageLoadOrder.front();
         pageLoadOrder.pop();
 
-        auto [victimPid, victimPageNum] = reversePageMap[victimFrame];
+        auto it = reversePageMap.find(victimFrame);
+        if (it != reversePageMap.end()) {
+            int    victimPid = it->second.first;
+            size_t victimPageNum = it->second.second;
 
-        Process* victimProcess = processManager.get_process_by_pid(victimPid);
-        if (!victimProcess) return false;
-
-        //save victim data in backing store
-        auto& victimEntry = victimProcess->getPageEntry(victimPageNum);
-
-        // LOAD the requested page
-        totalPageIns++;
-        process->incrementPageIns();
-
-        if (victimEntry.dirty) {
-            std::ofstream out(victimProcess->getBackingStorePath(), std::ios::binary | std::ios::in | std::ios::out);
-            out.seekp(victimPageNum * frameSize);
-
-            std::string dummy(frameSize, '\0'); // simulate saved data
-            out.write(dummy.c_str(), frameSize);
-            out.close();
-
-            ++totalPageOuts;
-            victimProcess->incrementPageOuts();
+            if (Process* victimProc = processManager.get_process_by_pid(victimPid)) {
+                auto& ventry = victimProc->getPageEntry(victimPageNum);
+                if (ventry.valid) {
+                    if (ventry.dirty) {
+                        std::string data(frameSize, '\0'); // (simulate payload)
+                        std::lock_guard<std::mutex> swLock(swapMutex);
+                        writePage_nolock(victimPid, victimPageNum, data.data());
+                        ++totalPageOuts;
+                        victimProc->incrementPageOuts();
+                    }
+                    ventry.valid = false;
+                    ventry.frameNumber = static_cast<size_t>(-1);
+                }
+            }
+            reversePageMap.erase(it);
         }
 
-        //update page table and free frame
-        victimEntry.valid = false;
-        victimEntry.frameNumber = -1;
+        // reuse the victim frame for the faulting page
         memory[victimFrame].occupied = false;
         memory[victimFrame].processId = -1;
-        freeFrames.push_back(victimFrame);
-        reversePageMap.erase(victimFrame);
-
-        //allocate freed frame to page
-        size_t frameIndex = freeFrames.back();
-        freeFrames.pop_back();
-
-        memory[frameIndex].occupied = true;
-        memory[frameIndex].processId = process->getPID();
-
-        //copy data from backing store into memory
-        std::ifstream in(process->getBackingStorePath(), std::ios::binary);
-        std::string pageData(frameSize, '\0');
-        in.seekg(pageNum * frameSize);
-        in.read(&pageData[0], frameSize);
-        in.close();
-
-        Process::PageTableEntry newEntry;
-        newEntry.valid = true;
-        newEntry.frameNumber = frameIndex;
-        newEntry.dirty = false;
-        process->pageTable[pageNum] = newEntry;
-
-        reversePageMap[frameIndex] = { process->getPID(), pageNum };
-        pageLoadOrder.push(frameIndex);
-
-        return true;
+        targetFrame = victimFrame;
     }
-    else {
-        //if there are still free frames, just assign
-        size_t frameIndex = freeFrames.back();
+    else
+    {
+        targetFrame = freeFrames.back();
         freeFrames.pop_back();
-
-        memory[frameIndex].occupied = true;
-        memory[frameIndex].processId = process->getPID();
-
-        std::ifstream in(process->getBackingStorePath(), std::ios::binary);
-        std::string pageData(frameSize, '\0');
-        in.seekg(pageNum * frameSize);
-        in.read(&pageData[0], frameSize);
-        in.close();
-
-        Process::PageTableEntry newEntry;
-        newEntry.valid = true;
-        newEntry.frameNumber = frameIndex;
-        newEntry.dirty = false;
-
-        process->pageTable[pageNum] = newEntry;
-        reversePageMap[frameIndex] = { process->getPID(), pageNum };
-        pageLoadOrder.push(frameIndex);
-
-        return true;
     }
+
+    load_into_frame(targetFrame);
+    return true;
 }
+
+// -------------------------- Optional helpers / legacy APIs -------------------------- //
 
 size_t MemoryManager::getProcessStartFrame(int processId) const {
     auto it = processAllocations.find(processId);
     if (it != processAllocations.end()) return it->second.first;
-    return -1;
+    return static_cast<size_t>(-1);
 }
 
 void MemoryManager::printMemoryMap() const {
@@ -244,28 +138,16 @@ void MemoryManager::printMemoryMap() const {
 }
 
 size_t MemoryManager::calculateExternalFragmentation() const {
-    size_t fragments = 0;
-    bool insideFragment = false;
-
-    for (const auto& frame : memory) {
-        if (!frame.occupied) {
-            if (!insideFragment) {
-                insideFragment = true;
-            }
-            fragments++;
-        } else {
-            insideFragment = false;
-        }
-    }
-
+    // (kept as in your version)
     size_t freeBytes = 0;
     size_t currentFreeBlock = 0;
-    int blockCount = 0;
+    int    blockCount = 0;
 
     for (const auto& frame : memory) {
         if (!frame.occupied) {
             currentFreeBlock++;
-        } else {
+        }
+        else {
             if (currentFreeBlock > 0) {
                 freeBytes += currentFreeBlock * frameSize;
                 blockCount++;
@@ -273,15 +155,12 @@ size_t MemoryManager::calculateExternalFragmentation() const {
             }
         }
     }
-
     if (currentFreeBlock > 0) {
         freeBytes += currentFreeBlock * frameSize;
         blockCount++;
     }
-
     return (blockCount >= 2) ? freeBytes : 0;
 }
-
 
 size_t MemoryManager::countProcessesInMemory() const {
     return processAllocations.size();
@@ -293,10 +172,8 @@ void MemoryManager::snapshotMemoryToFile(int quantumCycle) {
     std::ostringstream filename;
     filename << "memory stamp/memory_stamp_" << quantumCycle << ".txt";
     std::ofstream out(filename.str());
-
     if (!out.is_open()) return;
 
-    // Timestamp
     auto t = std::time(nullptr);
     auto tm = *std::localtime(&t);
     out << "Timestamp: (" << std::put_time(&tm, "%m/%d/%Y %I:%M:%S%p") << ")\n";
@@ -313,29 +190,108 @@ void MemoryManager::snapshotMemoryToFile(int quantumCycle) {
         processAllocations.begin(), processAllocations.end()
     );
 
-    std::sort(sortedAllocations.begin(), sortedAllocations.end(), [](const auto& a, const auto& b) {
-        return a.second.second > b.second.second; // sort by end frame descending
+    std::sort(sortedAllocations.begin(), sortedAllocations.end(),
+        [](const auto& a, const auto& b) {
+            return a.second.second > b.second.second; // end frame descending
         });
 
     for (const auto& [pid, bounds] : sortedAllocations) {
         size_t upper = (bounds.second + 1) * frameSize;
         size_t lower = bounds.first * frameSize;
-
         out << upper << "\n";
         out << "P" << pid << "\n";
         out << lower << "\n\n";
     }
-
     out << "----start----- = 0\n";
 }
 
-// MemoryManager.cpp
-size_t MemoryManager::getUsedFrames() const
-{
+size_t MemoryManager::getUsedFrames() const {
+    std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(mmMutex));
     return numFrames - freeFrames.size();
 }
 
-size_t MemoryManager::getFreeFrames() const
-{
+size_t MemoryManager::getFreeFrames() const {
+    std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(mmMutex));
     return freeFrames.size();
+}
+
+// -------------------------- swap helpers -------------------------- //
+
+void MemoryManager::ensureSwapSize(size_t requiredBytes) {
+    if (requiredBytes <= swapFileBytes) return;
+    swapfile.seekp(requiredBytes - 1, std::ios::beg);
+    char zero = '\0';
+    swapfile.write(&zero, 1);
+    swapfile.flush();
+    swapFileBytes = requiredBytes;
+}
+
+size_t MemoryManager::swapOffsetBytes(int pid, size_t pageNum) const {
+    auto it = swapStartPage.find(pid);
+    if (it == swapStartPage.end()) return SIZE_MAX;
+    size_t startPage = it->second;
+    return (startPage + pageNum) * frameSize;
+}
+
+void MemoryManager::writePage_nolock(int pid, size_t pageNum, const char* data) {
+    size_t off = swapOffsetBytes(pid, pageNum);
+    if (off == SIZE_MAX) return;
+    ensureSwapSize(off + frameSize);
+    swapfile.seekp(off, std::ios::beg);
+    swapfile.write(data, frameSize);
+    swapfile.flush();
+}
+
+void MemoryManager::readPage_nolock(int pid, size_t pageNum, char* out) {
+    size_t off = swapOffsetBytes(pid, pageNum);
+    if (off == SIZE_MAX) { std::memset(out, 0, frameSize); return; }
+    ensureSwapSize(off + frameSize);
+    swapfile.seekg(off, std::ios::beg);
+    swapfile.read(out, frameSize);
+
+    if (swapfile.gcount() < static_cast<std::streamsize>(frameSize)) {
+        std::streamsize got = swapfile.gcount();
+        if (got < 0) got = 0;
+        std::memset(out + got, 0, frameSize - static_cast<size_t>(got));
+        swapfile.clear();
+    }
+}
+
+// -------------------------- swap registration -------------------------- //
+
+void MemoryManager::registerProcessSwap(int pid, size_t pagesNeeded) {
+    std::lock_guard<std::mutex> swLock(swapMutex);
+    if (swapStartPage.count(pid)) return;
+    size_t start = nextFreeSwapPage;
+    nextFreeSwapPage += pagesNeeded;
+    swapStartPage[pid] = start;
+    swapNumPages[pid] = pagesNeeded;
+    ensureSwapSize(nextFreeSwapPage * frameSize);
+}
+
+void MemoryManager::unregisterProcessSwap(int pid) {
+    std::lock_guard<std::mutex> swLock(swapMutex);
+    swapStartPage.erase(pid);
+    swapNumPages.erase(pid);
+}
+
+// -------------------------- optional cleanup -------------------------- //
+
+void MemoryManager::freeAllFramesForPid(int pid) {
+    std::lock_guard<std::mutex> mmLock(mmMutex);
+    for (auto it = reversePageMap.begin(); it != reversePageMap.end(); ) {
+        if (it->second.first == pid) {
+            size_t f = it->first;
+            memory[f].occupied = false;
+            memory[f].processId = -1;
+            freeFrames.push_back(f);
+            it = reversePageMap.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+    // purge any stale entries at the front of FIFO
+    while (!pageLoadOrder.empty() && !memory[pageLoadOrder.front()].occupied)
+        pageLoadOrder.pop();
 }
