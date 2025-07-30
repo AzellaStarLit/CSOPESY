@@ -3,6 +3,7 @@
 #include <queue>
 #include <vector>
 #include <string>
+#include <chrono>
 
 #include "Process.h"
 
@@ -16,10 +17,17 @@ protected:
 	std::vector<bool> coreActive;
 	std::mutex statsMutex;
 
+	std::vector<int> currentPidPerCore;
+	std::vector<std::chrono::steady_clock::time_point> lastActive;
 public: 
 
 	//constructor/deconstructor
-	Scheduler(int cores) : numCores(cores), isRunning(false), coreActive(cores, false) {}
+	Scheduler(int cores)
+		: numCores(cores),
+		isRunning(false),
+		coreActive(cores, false),
+		currentPidPerCore(cores, -1),
+		lastActive(cores, std::chrono::steady_clock::now()){}
 	virtual ~Scheduler(){}
 
 	virtual void start() = 0; //begin the scheduling loop
@@ -46,13 +54,32 @@ public:
 		return delayPerExec;
 	}
 
+	// Centralized markers to keep timestamps in sync
+	void markCoreRunning(int coreId, int pid) {
+		std::lock_guard<std::mutex> lock(statsMutex);
+		currentPidPerCore[coreId] = pid;
+		coreActive[coreId] = true;
+		lastActive[coreId] = std::chrono::steady_clock::now();
+	}
+	void markCoreIdle(int coreId) {
+		std::lock_guard<std::mutex> lock(statsMutex);
+		currentPidPerCore[coreId] = -1;
+		coreActive[coreId] = false;
+		lastActive[coreId] = std::chrono::steady_clock::now();
+	}
+
+
 	// Returns: {used cores, available cores, utilization percentage}
 	std::tuple<int, int, double> getCPUUtilization() {
+		using namespace std::chrono;
 		std::lock_guard<std::mutex> lock(statsMutex);
 
+		const auto now = steady_clock::now();
+		const auto grace = 5ms;
+
 		int used = 0;
-		for (bool active : coreActive) {
-			if (active) used++;
+		for (int pid : currentPidPerCore) {
+			if (pid != -1) used++;
 		}
 
 		int available = numCores - used;
@@ -61,4 +88,14 @@ public:
 		return { used, available, utilization };
 	}
 
+	std::vector<int> getCurrentPidsPerCore() {
+		std::lock_guard<std::mutex> lock(statsMutex);
+		return currentPidPerCore; // copy
+	}
+
+	bool isProcessRunningNow(int pid) {
+		std::lock_guard<std::mutex> lock(statsMutex);
+		for (int p : currentPidPerCore) if (p == pid) return true;
+		return false;
+	}
 };

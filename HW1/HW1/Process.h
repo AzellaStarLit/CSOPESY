@@ -109,9 +109,9 @@ public:
     std::unordered_map<size_t, PageTableEntry> pageTable; //list of page tables per process
     PageTableEntry& getPageEntry(size_t pageNum); 
 
-    std::string backingStorePath; //backing store file for each process
-    void initializeBackingStore();
-    const std::string& getBackingStorePath() const;
+    //std::string backingStorePath; //backing store file for each process
+   // void initializeBackingStore();
+    //const std::string& getBackingStorePath() const;
     
     size_t getVirtualAddressForVar(const std::string& varName) const;
 

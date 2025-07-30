@@ -23,6 +23,9 @@ public:
 
 	void setMemoryManager(MemoryManager* mgr) { memoryManager = mgr; }
 
+	std::mutex admissionMutex;
+	size_t reservedFrames = 0;
+
 private:
 	//worker thread loop for each core
 	void worker_loop(int coreId);

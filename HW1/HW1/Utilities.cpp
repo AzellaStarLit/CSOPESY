@@ -14,6 +14,7 @@
 #include <random>
 #include <memory>
 #include <string>
+#include <unordered_set>
 
 extern ProcessManager processManager;
 extern ConsoleManager consoleManager;
@@ -145,8 +146,23 @@ void report_util() { // report-util logic
 	std::cout << "\033[32mReport saved to csopesy-log.txt\033[0m\n";
 }
 
+/*
 void process_smi() {
 	auto allProcesses = processManager.getAllProcesses();
+
+	std::unordered_set<int> runningPids;
+
+	if (scheduler) {
+		auto pidsPerCore = scheduler->getCurrentPidsPerCore(); // [-1, pid, ...]
+		for (int pid : pidsPerCore) if (pid != -1) runningPids.insert(pid);
+	}
+
+	size_t usedBytes = 0;
+
+	if (memoryManager) {
+		usedBytes = memoryManager->getUsedFrames() * memoryManager->getFrameSize();
+	}
+
 	size_t totalUsedMemory = 0;
 
 	const size_t columnWidthName = 20;
@@ -186,31 +202,212 @@ void process_smi() {
 		<< "Total Used Memory: " << totalUsedMemory << " / "
 		<< configManager.getMaxOverallMem() << " KB"
 		<< "\033[0m\n\n";
+}*/
+
+/*
+void process_smi() {
+	auto allProcesses = processManager.getAllProcesses();
+
+	// Build set of PIDs that are actually on CPU right now.
+	std::unordered_set<int> runningPids;
+	if (scheduler) {
+		auto pidsPerCore = scheduler->getCurrentPidsPerCore(); // [-1, pid, ...]
+		for (int pid : pidsPerCore) {
+			if (pid != -1) runningPids.insert(pid);
+		}
+	}
+
+	// Memory usage (frames * frameSize) -> bytes, then KB
+	size_t usedKb = 0;
+	if (memoryManager) {
+		size_t usedBytes = memoryManager->getUsedFrames() * memoryManager->getFrameSize();
+		usedKb = usedBytes / 1024;
+	}
+
+	// Columns
+	const size_t W_NAME = 20;
+	const size_t W_MEM = 12;
+	const size_t W_PGIN = 10;
+	const size_t W_PGOUT = 10;
+	const size_t W_STAT = 12;
+
+	std::cout << "\033[32m" << std::left
+		<< std::setw(W_NAME) << "Process"
+		<< std::setw(W_MEM) << "Mem(KB)"
+		<< std::setw(W_PGIN) << "PgIn"
+		<< std::setw(W_PGOUT) << "PgOut"
+		<< std::setw(W_STAT) << "Status"
+		<< "\033[0m\n"
+		<< std::string(W_NAME + W_MEM + W_PGIN + W_PGOUT + W_STAT, '-') << "\n";
+
+	for (auto* p : allProcesses) {
+		size_t memKB = p->getMemoryUsage();
+
+		std::string status;
+		if (p->isFinished()) {
+			status = "Finished";
+		}
+		else if (runningPids.count(p->getPID())) {
+			status = "Running";     // authoritative: actually on CPU
+		}
+		else {
+			status = "Sleeping";    // not on CPU right now (includes not admitted)
+		}
+
+		std::cout << std::left
+			<< std::setw(W_NAME) << p->getName()
+			<< std::setw(W_MEM) << memKB
+			<< std::setw(W_PGIN) << p->getPageIns()
+			<< std::setw(W_PGOUT) << p->getPageOuts()
+			<< std::setw(W_STAT) << status << "\n";
+	}
+
+	std::cout << "\n\033[32m"
+		<< "Total Processes: " << allProcesses.size() << "\n"
+		<< "Total Used Memory: " << usedKb << " / "
+		<< configManager.getMaxOverallMem() << " KB"
+		<< "\033[0m\n\n";
+}
+*/
+
+void process_smi() {
+	auto all = processManager.getAllProcesses();
+
+	// who is currently on cores
+	std::unordered_set<int> runningPids;
+	if (scheduler) {
+		auto pidsPerCore = scheduler->getCurrentPidsPerCore();
+		for (int pid : pidsPerCore) if (pid != -1) runningPids.insert(pid);
+	}
+
+	// physical memory used (in KB)
+	size_t usedKB = memoryManager ? memoryManager->getUsedFrames() * memoryManager->getFrameSize() : 0;
+	size_t totalKB = configManager.getMaxOverallMem();
+
+	const size_t W_NAME = 20, W_MEM = 12, W_PGIN = 10, W_PGOUT = 10, W_STAT = 12;
+
+	std::cout << "\033[32m" << std::left
+		<< std::setw(W_NAME) << "Process"
+		<< std::setw(W_MEM) << "Mem(KB)"
+		<< std::setw(W_PGIN) << "PgIn"
+		<< std::setw(W_PGOUT) << "PgOut"
+		<< std::setw(W_STAT) << "Status"
+		<< "\033[0m\n"
+		<< std::string(W_NAME + W_MEM + W_PGIN + W_PGOUT + W_STAT, '-') << "\n";
+
+	for (auto* p : all) {
+		if (!p) continue;
+		std::string state =
+			p->isFinished() ? "Finished" :
+			(runningPids.count(p->getPID()) > 0) ? "Running" :
+			"Sleeping"; // collapse remainder
+
+		std::cout << std::left
+			<< std::setw(W_NAME) << p->getName()
+			<< std::setw(W_MEM) << p->getMemoryUsage()  // KB in your setup
+			<< std::setw(W_PGIN) << p->getPageIns()
+			<< std::setw(W_PGOUT) << p->getPageOuts()
+			<< std::setw(W_STAT) << state << "\n";
+	}
+
+	std::cout << "\n\033[32m"
+		<< "Total Processes: " << all.size() << "\n"
+		<< "Total Used Memory: " << usedKB << " / " << totalKB << " KB"
+		<< "\033[0m\n\n";
 }
 
 
+/*
 void vmstat() {
-	auto allProcesses = processManager.getAllProcesses();
+	auto all = processManager.getAllProcesses();
 	int running = 0, sleeping = 0, finished = 0;
-
-	for (auto* p : allProcesses) {
-		if (p->isFinished()) ++finished;
+	for (auto* p : all) {
+		if (!p) continue;
+		if (p->isFinished())      ++finished;
 		else if (p->isSleeping()) ++sleeping;
-		else ++running;
+		else                      ++sleeping;
 	}
 
-	size_t used = processManager.getUsedMemory();
-	size_t total = configManager.getMaxOverallMem();
+	size_t totalKB = configManager.getMaxOverallMem();  // config value is in KB
+	size_t frameSizeKB = 0;
+	size_t usedFrames = 0;
+	size_t freeFrames = 0;
+	size_t pgIn = 0;
+	size_t pgOut = 0;
+	size_t usedKB = 0;
+
+	if (memoryManager) {
+		frameSizeKB = memoryManager->getFrameSize();     // keep units consistent with config (KB)
+		usedFrames = memoryManager->getUsedFrames();
+		freeFrames = memoryManager->getFreeFrames();
+		pgIn = memoryManager->getTotalPageIns();
+		pgOut = memoryManager->getTotalPageOuts();
+		usedKB = memoryManager->getUsedFrames() * memoryManager->getFrameSize();
+	}
+
+	if (usedKB > totalKB) usedKB = totalKB;             // clamp to avoid underflow
+	size_t freeKB = (usedKB <= totalKB) ? (totalKB - usedKB) : 0;
 
 	std::cout << "\n\033[32mMemory (KB):\033[0m\n"
-		<< "  Used: " << used << "\n"
-		<< "  Free: " << (total - used) << "\n";
+		<< "  Used: " << usedKB << "\n"
+		<< "  Free: " << freeKB << "\n";
 
-	/* page‑in/out counters */
+	std::cout << "\n\033[32mFrames:\033[0m\n"
+		<< "  Used: " << usedFrames << "\n"
+		<< "  Free: " << freeFrames << "\n";
+
 	std::cout << "\n\033[32mPages:\033[0m\n"
-		<< "  Page-ins : " << memoryManager->getTotalPageIns() << '\n'
-		<< "  Page-outs: " << memoryManager->getTotalPageOuts() << "\n\n";
+		<< "  Page-ins : " << pgIn << '\n'
+		<< "  Page-outs: " << pgOut << "\n";
 
+	std::cout << "\n\033[32mProcesses:\033[0m\n"
+		<< "  Running : " << running << '\n'
+		<< "  Sleeping: " << sleeping << '\n'
+		<< "  Finished: " << finished << "\n\n";
+}
+*/
+
+void vmstat() {
+	auto all = processManager.getAllProcesses();
+
+	// Memory (KB)
+	size_t usedKB = memoryManager ? memoryManager->getUsedFrames() * memoryManager->getFrameSize() : 0;
+	size_t totalKB = configManager.getMaxOverallMem();
+	std::cout << "\n\033[32mMemory (KB):\033[0m\n"
+		<< "  Used: " << usedKB << "\n"
+		<< "  Free: " << (totalKB > usedKB ? (totalKB - usedKB) : 0) << "\n";
+
+	// Frames (optional but handy)
+	std::cout << "\n\033[32mFrames:\033[0m\n"
+		<< "  Used: " << (memoryManager ? memoryManager->getUsedFrames() : 0) << "\n"
+		<< "  Free: " << (memoryManager ? memoryManager->getFreeFrames() : 0) << "\n";
+
+	// Page-ins/outs
+	std::cout << "\n\033[32mPages:\033[0m\n"
+		<< "  Page-ins : " << (memoryManager ? memoryManager->getTotalPageIns() : 0) << "\n"
+		<< "  Page-outs: " << (memoryManager ? memoryManager->getTotalPageOuts() : 0) << "\n";
+
+	// Get who is actually running right now
+	std::unordered_set<int> runningSet;
+	if (scheduler) {
+		auto pidsPerCore = scheduler->getCurrentPidsPerCore(); // [-1, pid, ...]
+		for (int pid : pidsPerCore) if (pid != -1) runningSet.insert(pid);
+	}
+
+	size_t running = 0, sleeping = 0, finished = 0;
+	running = runningSet.size();
+
+	for (auto* p : all) {
+		if (!p) continue;
+		if (p->isFinished()) ++finished;
+		else if (runningSet.count(p->getPID())) { /* counted above */ }
+		else ++sleeping; // collapse: not running and not finished => "Sleeping"
+	}
+
+	std::cout << "\n\033[32mProcesses:\033[0m\n"
+		<< "  Running : " << running << "\n"
+		<< "  Sleeping: " << sleeping << "\n"
+		<< "  Finished: " << finished << "\n\n";
 }
 
 /*****************************
