@@ -174,11 +174,13 @@ void process_smi() {
 			<< std::setw(W_NAME) << p->getName()
 			<< std::setw(W_MEM) << p->getMemoryUsage()
 			<< std::setw(W_PGIN) << p->getPageIns()
-			<< std::setw(W_PGOUT) << p->getPageOuts();
-
+			<< std::setw(W_PGOUT) << p->getPageOuts()
+			<< std::setw(W_STAT) << p->getStatusString() << "\n";
+		/*
 		std::string state = p->isFinished() ? "Finished"
 			: (p->isSleeping() ? "Sleeping" : "Running");
 		std::cout << std::setw(W_STAT) << state << "\n";
+		*/
 	}
 
 	std::cout << "\n\033[32m"
@@ -260,7 +262,9 @@ std::vector<std::string> generate_instructions() {
 			//"FOR([SUBTRACT(var_x, var_y, 1)], 2)",
 			"PRINT(\"Hello world from process\")",
 			"PRINT(\"We love CSOPESY <3\")",
-			"PRINT(\"Value from: \" +var_x)"
+			"PRINT(\"Value from: \" +var_x)",
+			"WRITE(var_x, 100)",
+			"READ(var_y, 50)",
 	};
 
 	std::random_device rd;

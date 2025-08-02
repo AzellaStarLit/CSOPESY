@@ -10,6 +10,16 @@
 
 class MemoryManager;
 
+enum class ProcessStatus {
+    New,
+    Ready,
+    Running,
+    Sleeping,
+    Waiting,
+    Finished,
+    Terminated
+};
+
 class Process {
 private:
 	//size_t pid;
@@ -19,6 +29,7 @@ private:
     std::string creationTimestamp;
     std::string completionTimestamp;
 	size_t memorySize;
+	ProcessStatus status = ProcessStatus::New; //default status
 
     int instructionPointer; //stores the current line being executed
     int totalLines; 
@@ -51,21 +62,13 @@ public:
     //constructors
 	Process(); //default
 	Process(const std::string& name); //when a process is given a name
-    Process(const std::string& name, int instructionCount, int pid); //when a process is given a name and instruction count
-    Process(const std::string& name, size_t memory);
     Process(const std::string& name, size_t memorySize, size_t frameSize, MemoryManager* memoryManager);
 
 
-    void initializeInstructionList();
-
-    //TODO: GENERATE INSTRUCTIONS AND EXECUTE INSTRUCTIONS
-    void generate_instructions();
-	std::string generate_rand_instruction();
+    //GENERATE INSTRUCTIONS AND EXECUTE INSTRUCTIONS
     void execute_instruction(const std::string& instruction, int coreId);
     void load_instructions(const std::vector<std::string>& instrs);
-
     void add_instruction(const std::string& instr);
-
     void incrementInstructionPointer();
 
 	//TODO: Clean up unused functions
@@ -74,21 +77,26 @@ public:
     void show_symbol_table() const;
     const std::vector<std::string>& get_log() const;
     
+    // GETTERS
     std::string getName() const;
     std::string getCurrentInstruction() const;
 	int getCurrentLine() const;
     int getTotalLines() const;
     int getCurrentCore() const { return currentCoreId; }
+    ProcessStatus getStatus() const;
+    std::string getStatusString() const;
 
     std::string getCreationTimestamp() const { return creationTimestamp; }
     std::string getCompletionTimestamp() const { return completionTimestamp; }
     std::string get_current_timestamp() const;
-    void setPID(int pid) { this->processId = pid; }
     int getPID() const { return processId; }
-
-
+    
+    //SETTERS
+    void setPID(int pid) { this->processId = pid; }
     void setCompletionTimestamp();
     void setCurrentCore(int core) { currentCoreId = core; }
+    void setStatus(ProcessStatus newStatus);
+
     void markFinished();
     bool isFinished();
 
@@ -109,6 +117,7 @@ public:
     std::unordered_map<size_t, PageTableEntry> pageTable; //list of page tables per process
     PageTableEntry& getPageEntry(size_t pageNum); 
 
+	//Backing store
     std::string backingStorePath; //backing store file for each process
     void initializeBackingStore();
     const std::string& getBackingStorePath() const;

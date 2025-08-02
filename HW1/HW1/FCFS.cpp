@@ -50,6 +50,7 @@ void FCFSScheduler::worker_loop(int coreId) {
 			coreActive[coreId] = true; // mark this core as active
 		}
 		process->setCurrentCore(coreId); //set the current core executing this process
+		process->setStatus(ProcessStatus::Running);
 
 		while (!process->isFinished()) {
 			process->execute_instruction(process->getCurrentInstruction(), coreId);
@@ -71,6 +72,7 @@ void FCFSScheduler::worker_loop(int coreId) {
 void FCFSScheduler::add_process(Process* p) {
 	std::lock_guard<std::mutex> lock(queueMutex);
 	readyQueue.push(p);
+	p->setStatus(ProcessStatus::Ready);
 	cv.notify_one();
 }
 

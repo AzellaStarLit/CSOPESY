@@ -50,7 +50,7 @@ Process::Process(const std::string& name)
 Process::Process(const std::string& name, size_t memorySize, size_t frameSize, MemoryManager* memoryManager)
     : name(name), instructionPointer(0), totalLines(0), memorySize(memorySize),
     creationTimestamp(get_current_timestamp()), processId(global_pid_counter++),
-    frameSize(frameSize), memoryManager(memoryManager) {
+    frameSize(frameSize), memoryManager(memoryManager), status(ProcessStatus::New) {
 
     //std::cout << "Process created with name: " << name << " and memory size: " << memorySize << std::endl;
     
@@ -101,11 +101,11 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
     else if (command == "FOR") { execute_for(argument, coreId, 1);}
     else if (command == "READ") {
         // Placeholder for READ command
-        std::cout << "READ command executed with argument: " << argument << std::endl;
+       // std::cout << "READ command executed with argument: " << argument << std::endl;
     }
     else if (command == "WRITE") {
         // Placeholder for WRITE command
-        std::cout << "WRITE command executed with argument: " << argument << std::endl;
+        //std::cout << "WRITE command executed with argument: " << argument << std::endl;
     }
     else {
         std::cout << "Unknown command: " << command << std::endl;
@@ -455,6 +455,7 @@ void Process::markFinished() {
     if (!finished) {
         finished = true;
         setCompletionTimestamp();
+		status = ProcessStatus::Finished;
     }
 }
 
@@ -480,4 +481,27 @@ size_t Process::getVirtualAddressForVar(const std::string& varName) const {
     // For simplicity: hash the varName to simulate an address
     std::hash<std::string> hasher;
     return hasher(varName) % memorySize;
+}
+
+// Process.cpp
+
+ProcessStatus Process::getStatus() const {
+    return status;
+}
+
+void Process::setStatus(ProcessStatus newStatus) {
+    status = newStatus;
+}
+
+std::string Process::getStatusString() const {
+    switch (status) {
+        case ProcessStatus::New:        return "New";
+        case ProcessStatus::Running:    return "Running";
+        case ProcessStatus::Sleeping:   return "Sleeping";
+        case ProcessStatus::Waiting:    return "Waiting";
+        case ProcessStatus::Ready:      return "Ready";
+        case ProcessStatus::Finished:   return "Finished";
+        case ProcessStatus::Terminated: return "Terminated";
+        default:                         return "Unknown";
+    }
 }

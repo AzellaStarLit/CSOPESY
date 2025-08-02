@@ -91,7 +91,7 @@ bool screen_command(const std::string& command) {
 				<< std::left << std::setw(10) << "PID"
 				<< std::setw(10) << "Core"
 				<< std::setw(15) << "Progress"
-				<< "Creation Time\n" << std::string(60, '-') << "\n";
+				<< "Creation Time\n" << std::string(90, '-') << "\n";
 
 			for (auto* p : running) {
 				std::cout << std::left << std::setw(20) << p->getName()
@@ -109,7 +109,7 @@ bool screen_command(const std::string& command) {
 		else {
 			std::cout << std::left << std::setw(20) << "Name"
 				<< std::setw(25) << "Creation Time"
-				<< "Completion Time\n" << std::string(60, '-') << "\n";
+				<< "Completion Time\n" << std::string(90, '-') << "\n";
 
 			for (auto p : finished) {
 				std::cout << std::left << std::setw(20) << p->getName()
