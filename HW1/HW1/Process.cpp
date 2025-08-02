@@ -66,32 +66,6 @@ void Process::add_instruction(const std::string& instr) {
     totalLines = instructions.size();
 }
 
-//this will generate and add instructions to the list
-void Process::generate_instructions() {
-    int count = 10; //for testing only, this should come from random number based on config range
-
-    for (int i = 0; i < count; ++i) {
-        add_instruction("print: Hello World! from " + name + " [Line " + std::to_string(i + 1) + "]");
-        totalLines = instructions.size();
-    }
-}
-
-//this will generate random instructions from a predefined set
-std::string Process::generate_rand_instruction() {
-    static const std::string instructions[] = {
-        "PRINT(\"\")",
-        "PRINT(\"Processing...\")",
-        "PRINT(\"We love CSOPESY <3\")",
-    };
-
-    //TODO: EDIT TO READ CONFIGURATION FILE FOR RANGE
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_int_distribution<> dis(0, sizeof(instructions) - 1);
-
-    return instructions[dis(gen)];
-}
-
 
 void Process::load_instructions(const std::vector<std::string>& instrs) {
     // Clear existing instructions if needed
