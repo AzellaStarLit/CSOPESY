@@ -72,6 +72,7 @@ void FCFSScheduler::worker_loop(int coreId) {
 void FCFSScheduler::add_process(Process* p) {
 	std::lock_guard<std::mutex> lock(queueMutex);
 	readyQueue.push(p);
+	p->setCurrentCore(-1); // reset core id since it will be assigned when picked up by a worker
 	p->setStatus(ProcessStatus::Ready);
 	cv.notify_one();
 }

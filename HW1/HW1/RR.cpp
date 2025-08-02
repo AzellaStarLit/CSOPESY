@@ -73,6 +73,7 @@ void RRScheduler::worker_loop(int coreId)
         
         if (!process->hasResidentPage() && memoryManager->getFreeFrames() == 0) {
             process->setStatus(ProcessStatus::Waiting);
+            process->setCurrentCore(-1);
             add_process(process);                   // push back to the queue
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;                               // try another PCB
@@ -114,6 +115,7 @@ void RRScheduler::worker_loop(int coreId)
                 memoryManager->deallocateFrames(frames, start, {});*/
         }
         else {
+            process->setCurrentCore(-1);
             process->setStatus(ProcessStatus::Ready);
             add_process(process);       // round?robin back to tail
         }

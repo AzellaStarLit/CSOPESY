@@ -86,10 +86,10 @@ bool screen_command(const std::string& command) {
 		auto [used, available, util] = scheduler->getCPUUtilization();
 		std::cout << "CPU utilization: " << util << "%\n";
 		std::cout << "Cores used: " << used << "\n";
-		std::cout << "Cores available: " << available << "\n\n";
+		std::cout << "Cores available: " << available << "\n";
 
 
-		std::cout << "\033[35mRUNNING PROCESSES:\033[0m\n";
+		std::cout << "RUNNING PROCESSES: \n";
 		if (running.empty()) {
 			std::cout << "No running processes. \n";
 		} else {
@@ -108,7 +108,7 @@ bool screen_command(const std::string& command) {
 			}
 		}
 		
-		std::cout << "\033[35mFINISHED PROCESSES:\033[0m\n";
+		std::cout << "\nFINISHED PROCESSES: \n";
 		if (finished.empty()) {
 			std::cout << "No finished processes.\n";
 		}
