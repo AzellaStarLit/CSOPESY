@@ -96,9 +96,14 @@ void report_util() { // report-util logic
 	else {
 		std::vector<Process*> running, finished;
 
-		for (auto proc : allProcesses) {
-			if (proc->isFinished()) finished.push_back(proc);
-			else running.push_back(proc);
+		for (auto* p : allProcesses) {
+			if (!p) continue;
+
+			auto status = p->getStatus();
+			if (status == ProcessStatus::Running)
+				running.push_back(p);
+			else if (status == ProcessStatus::Finished)
+				finished.push_back(p);
 		}
 
 		auto [used, available, util] = scheduler->getCPUUtilization();
