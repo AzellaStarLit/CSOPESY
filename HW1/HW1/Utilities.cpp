@@ -161,7 +161,7 @@ void process_smi() {
 
 	std::cout << "\033[32m" << std::left
 		<< std::setw(W_NAME) << "Process"
-		<< std::setw(W_MEM) << "Mem(KB)"
+		<< std::setw(W_MEM) << "Mem(K)"
 		<< std::setw(W_PGIN) << "PgIn"
 		<< std::setw(W_PGOUT) << "PgOut"
 		<< std::setw(W_STAT) << "Status"
@@ -184,7 +184,7 @@ void process_smi() {
 	std::cout << "\n\033[32m"
 		<< "Total Processes: " << allProcesses.size() << "\n"
 		<< "Total Used Memory: " << totalUsedMemory << " / "
-		<< configManager.getMaxOverallMem() << " KB"
+		<< configManager.getMaxOverallMem() << " K"
 		<< "\033[0m\n\n";
 }
 
