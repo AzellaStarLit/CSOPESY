@@ -92,41 +92,28 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
     std::string argument = instruction.substr(parenStart + 1, parenEnd - parenStart - 1);
 
   
-    if (command == "PRINT") {
-        execute_print(argument, coreId);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
+    if (command == "PRINT") { execute_print(argument, coreId);}
+    else if (command == "SLEEP") { execute_sleep(argument);}
+    else if (command == "DECLARE") { execute_declare(argument);}
+    else if (command == "ADD") { execute_add(argument);  }
+    else if (command == "SUBTRACT") { execute_subtract(argument);}
+    else if (command == "SLEEP") { execute_sleep(argument); }
+    else if (command == "FOR") { execute_for(argument, coreId, 1);}
+    else if (command == "READ") {
+        // Placeholder for READ command
+        std::cout << "READ command executed with argument: " << argument << std::endl;
     }
-    else if (command == "SLEEP") {
-        execute_sleep(argument);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
-    }
-    else if (command == "DECLARE") {
-        execute_declare(argument);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
-    }
-    else if (command == "ADD") {
-        execute_add(argument);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
-    }
-    else if (command == "SUBTRACT") {
-        execute_subtract(argument);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
-    }
-    else if (command == "SLEEP") {
-        execute_sleep(argument);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
-    }
-    else if (command == "FOR") {
-        execute_for(argument, coreId, 1);
+    else if (command == "WRITE") {
+        // Placeholder for WRITE command
+        std::cout << "WRITE command executed with argument: " << argument << std::endl;
     }
     else {
         std::cout << "Unknown command: " << command << std::endl;
+    }
+
+	instructionPointer++; // Increment instruction pointer after execution
+    if (instructionPointer >= totalLines) {
+        markFinished(); // Mark process as finished if all instructions are executed
     }
 }
 
