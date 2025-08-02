@@ -147,7 +147,7 @@ void report_util() { // report-util logic
 
 void process_smi() {
 	auto allProcesses = processManager.getAllProcesses();
-	size_t totalUsedMemory = 0;
+	size_t totalUsedMemory = memoryManager->getUsedFrames() * configManager.getMemPerFrame();
 
 	const size_t columnWidthName = 20;
 	const size_t columnWidthMem = 15;
@@ -183,7 +183,7 @@ void process_smi() {
 
 	std::cout << "\n\033[32m"
 		<< "Total Processes: " << allProcesses.size() << "\n"
-		<< "Total Used Memory: " << totalUsedMemory << " / "
+		<< "Total Used Memory: " << totalUsedMemory << "K / "
 		<< configManager.getMaxOverallMem() << " K"
 		<< "\033[0m\n\n";
 }
