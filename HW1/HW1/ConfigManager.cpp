@@ -30,13 +30,13 @@ bool ConfigManager::loadFromFile(const std::string& filename) {
         }},
         {"quantum-cycles", [this](const std::string& val) {
             uint32_t v = std::stoul(val);
-            //if (v < 1)
-               // throw std::runtime_error("quantum-cycles must be >= 1");
+            if (v < 0)
+                throw std::runtime_error("quantum-cycles must be >= 1");
             quantumCycles = v;
         }},
         {"batch-process-freq", [this](const std::string& val) {
             uint32_t v = std::stoul(val);
-            if (v < 1)
+            if (v < 0)
                 throw std::runtime_error("batch-process-freq must be >= 1");
             batchProcessFreq = v;
         }},
@@ -54,7 +54,7 @@ bool ConfigManager::loadFromFile(const std::string& filename) {
         }},
         {"delays-per-exec", [this](const std::string& val) {
             unsigned long v = std::stoul(val);
-            if (v > UINT32_MAX)
+            if (v > UINT32_MAX || v < 0)
                 throw std::runtime_error("delays-per-exec must be in [0, 2^32]");
             delaysPerExec = v;
         }},

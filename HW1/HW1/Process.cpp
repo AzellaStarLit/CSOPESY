@@ -212,9 +212,16 @@ void Process::execute_add(const std::string& args) {
     std::string timestamp = get_current_timestamp();
     std::istringstream ss(args);
     std::string var1, var2, var3;
-    getline(ss, var1, ',');
-    getline(ss, var2, ',');
-    getline(ss, var3, ',');
+
+    auto trim = [](std::string s) -> std::string {
+        s.erase(0, s.find_first_not_of(" \t"));
+        s.erase(s.find_last_not_of(" \t") + 1);
+        return s;
+    };
+
+    getline(ss, var1, ','); var1 = trim(var1);
+    getline(ss, var2, ','); var2 = trim(var2);
+    getline(ss, var3, ','); var3 = trim(var3);
 
     size_t virtualAddr = getVirtualAddressForVar(args);
     size_t pageNum = virtualAddr / frameSize;
@@ -244,9 +251,16 @@ void Process::execute_subtract(const std::string& args) {
     std::string timestamp = get_current_timestamp();
     std::istringstream ss(args);
     std::string var1, var2, var3;
-    getline(ss, var1, ',');
-    getline(ss, var2, ',');
-    getline(ss, var3, ',');
+
+    auto trim = [](std::string s) -> std::string {
+        s.erase(0, s.find_first_not_of(" \t"));
+        s.erase(s.find_last_not_of(" \t") + 1);
+        return s;
+    };
+
+    getline(ss, var1, ','); var1 = trim(var1);
+    getline(ss, var2, ','); var2 = trim(var2);
+    getline(ss, var3, ','); var3 = trim(var3);
 
     size_t virtualAddr = getVirtualAddressForVar(args);
     size_t pageNum = virtualAddr / frameSize;
