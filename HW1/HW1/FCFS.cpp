@@ -93,6 +93,14 @@ void FCFSScheduler::worker_loop(int coreId) {
 		markCoreIdle(coreId);
 		process->markFinished();
 
+		if (reservedNow) {
+			std::lock_guard<std::mutex> lk(admissionMutex);
+			if (reservedFrames >= framesNeeded)
+				reservedFrames -= framesNeeded;
+			else
+				reservedFrames = 0; // safety
+		}
+
 		if (memoryManager) memoryManager->freeAllFramesForPid(process->getPID());
 		memoryManager->unregisterProcessSwap(process->getPID());
 	}
