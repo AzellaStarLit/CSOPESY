@@ -184,7 +184,7 @@ void process_smi() {
 	std::cout << "\n\033[32m"
 		<< "Total Processes: " << allProcesses.size() << "\n"
 		<< "Total Used Memory: " << totalUsedMemory << "K / "
-		<< configManager.getMaxOverallMem() << " K"
+		<< configManager.getMaxOverallMem() << "K"
 		<< "\033[0m\n\n";
 }
 
