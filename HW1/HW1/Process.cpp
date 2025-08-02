@@ -53,7 +53,9 @@ Process::Process(const std::string& name, size_t memorySize, size_t frameSize, M
     frameSize(frameSize), memoryManager(memoryManager) {
 
     //std::cout << "Process created with name: " << name << " and memory size: " << memorySize << std::endl;
-    initializeBackingStore();
+    
+    // TODO: Remove individual backing store per process
+    //initializeBackingStore();
 }
 
 

@@ -167,6 +167,7 @@ size_t MemoryManager::countProcessesInMemory() const {
 }
 
 void MemoryManager::snapshotMemoryToFile(int quantumCycle) {
+
     std::filesystem::create_directory("memory stamp");
 
     std::ostringstream filename;
