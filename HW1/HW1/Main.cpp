@@ -108,7 +108,7 @@ bool screen_command(const std::string& command) {
 			}
 		}
 		
-		std::cout << "\033[35mFINISHED PROCESSES:\033[0m\n";
+		std::cout << "\033[35m\nFINISHED PROCESSES:\033[0m\n";
 		if (finished.empty()) {
 			std::cout << "No finished processes.\n";
 		}
