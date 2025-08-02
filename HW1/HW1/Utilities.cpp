@@ -255,9 +255,9 @@ std::vector<std::string> generate_instructions() {
 			"SUBTRACT(var_x, var_y, var_x)",
 			"SLEEP(300)",
 			"SLEEP(2000)",
-			//"FOR([PRINT(\"Looping inside process\")], 2)",
-			//"FOR([ADD(var_x, var_x, 1)], 2)",
-			//"FOR([SUBTRACT(var_x, var_y, 1)], 2)",
+			"FOR([PRINT(\"Looping inside process\")], 2)",
+			"FOR([ADD(var_x, var_x, 1)], 2)",
+			"FOR([SUBTRACT(var_x, var_y, 1)], 2)",
 			"PRINT(\"Hello world from process\")",
 			"PRINT(\"We love CSOPESY <3\")",
 			"PRINT(\"Value from: \" +var_x)"
