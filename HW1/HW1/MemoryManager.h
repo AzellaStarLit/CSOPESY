@@ -86,6 +86,12 @@ public:
     void freeAllFramesForPid(int pid);
 
     // read/write memory
+    bool writeUInt16(int pid, uint32_t address, uint16_t value);
+    bool readUInt16(int pid, uint32_t address, uint16_t& outValue);
+
     bool readByte(int pid, size_t virtualAddress, char& outByte);
     bool writeByte(int pid, size_t virtualAddress, char inByte);
+
+    bool translate(int pid, size_t virtualAddress, size_t& physicalAddress);
+
 };

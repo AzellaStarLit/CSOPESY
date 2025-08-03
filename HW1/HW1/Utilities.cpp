@@ -457,6 +457,7 @@ std::vector<std::string> generate_instructions() {
 	static const std::string templates[] = {
 		"DECLARE(var_x, 100)",
 		"DECLARE(var_y, 50)",
+		/*
 		"ADD(var_x, var_x, var_y)",
 		"SUBTRACT(var_x, var_y, var_x)",
 		"SLEEP(300)",
@@ -467,7 +468,8 @@ std::vector<std::string> generate_instructions() {
 		"PRINT(\"Hello world from process\")",
 		"PRINT(\"We love CSOPESY <3\")",
 		"PRINT(\"Value from: \" +var_x)",
-		"WRITE(var_x, 100)",
+		*/
+		"WRITE(50, 100)",
 		"READ(var_y, 50)"
 	};
 

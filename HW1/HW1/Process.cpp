@@ -141,7 +141,7 @@ void Process::execute_read(const std::string& args) {
     std::string var = args.substr(0, comma);
     std::string addrStr = args.substr(comma + 1);
 
-    // Trim whitespace (basic manual trimming)
+    // Trim whitespace
     var.erase(0, var.find_first_not_of(" \t"));
     var.erase(var.find_last_not_of(" \t") + 1);
     addrStr.erase(0, addrStr.find_first_not_of(" \t"));
@@ -157,19 +157,21 @@ void Process::execute_read(const std::string& args) {
         return;
     }
 
-    // --- Try to read from memory ---
-    char byte = '\0';
-    if (!memoryManager->readByte(processId, address, byte)) {
-        symbolTable[var] = static_cast<uint16_t>(static_cast<unsigned char>(byte));
-        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " READ: Failed to read memory at address " + std::to_string(address));
-        return;
-    }
+    uint16_t value = 0;
+    bool success = memoryManager->readUInt16(processId, address, value);
 
-    // --- Log the successful read ---
-    log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-        " READ: " + var + " = '" + std::string(1, byte) + "' from address " + std::to_string(address));
+    if (success) {
+        symbolTable[var] = value;
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " READ: " + var + " = " + std::to_string(value) + " from address " + std::to_string(address));
+    }
+    else {
+        symbolTable[var] = 0;  // Default to 0 if failed
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " READ FAILED: Could not read from memory[" + std::to_string(address) + "]");
+    }
 }
+
 
 // this is the execution logic for the WRITE command
 void Process::execute_write(const std::string& args) {
@@ -185,7 +187,7 @@ void Process::execute_write(const std::string& args) {
     std::string addrStr = args.substr(0, comma);
     std::string valueStr = args.substr(comma + 1);
 
-    // Trim whitespace (basic manual trimming)
+    // Trim whitespace
     addrStr.erase(0, addrStr.find_first_not_of(" \t"));
     addrStr.erase(addrStr.find_last_not_of(" \t") + 1);
     valueStr.erase(0, valueStr.find_first_not_of(" \t"));
@@ -203,15 +205,13 @@ void Process::execute_write(const std::string& args) {
         return;
     }
 
-    if (value < 0 || value > 255) {
+    if (value < 0 || value > 65535) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " WRITE: Value out of byte range (0-255): " + std::to_string(value));
+            " WRITE: Value out of range (0-65535): " + std::to_string(value));
         return;
     }
 
-    char byteToWrite = static_cast<char>(value);
-
-    bool success = memoryManager->writeByte(processId, address, byteToWrite);
+    bool success = memoryManager->writeUInt16(processId, address, static_cast<uint16_t>(value));
 
     if (success) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
@@ -222,9 +222,6 @@ void Process::execute_write(const std::string& args) {
             " WRITE FAILED: Could not write to memory[" + std::to_string(address) + "]");
     }
 }
-
-
-//function to check valid address
 
 
 //this is the execution logic of the PRINT command
@@ -278,32 +275,50 @@ void Process::execute_declare(const std::string& args) {
     size_t comma = args.find(',');
     std::string timestamp = get_current_timestamp();
 
-    size_t virtualAddr = getVirtualAddressForVar(args);
-    size_t pageNum = virtualAddr / frameSize;
-
-    if (!pageTable[pageNum].valid) {
-        memoryManager->handlePageFault(this, pageNum); 
-    }
-
     if (comma == std::string::npos) {
-        //std::cerr << "Invalid DECLARE format: " << args << "\n";
-        log.push_back("[" + timestamp + "] Core "+ std::to_string(getCurrentCore()) + "DECLARE: Invalid format: " + args);
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " DECLARE: Invalid format: " + args);
         return;
     }
 
     std::string var = args.substr(0, comma);
     std::string valStr = args.substr(comma + 1);
-    
+
+    // Trim whitespace on both var and valStr
+    auto trim = [](std::string& s) {
+        s.erase(0, s.find_first_not_of(" \t"));
+        s.erase(s.find_last_not_of(" \t") + 1);
+        };
+
+    trim(var);
+    trim(valStr);
+
+    // Get virtual address for the variable (pass var only!)
+    size_t virtualAddr = getVirtualAddressForVar(var);
+    size_t pageNum = virtualAddr / frameSize;
+
+    if (!pageTable[pageNum].valid) {
+        if (!memoryManager->handlePageFault(this, pageNum)) {
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " DECLARE: Failed to handle page fault for " + var);
+            return;
+        }
+    }
+
     try {
         uint32_t value = std::stoul(valStr);
-        if (value > 65535) value = 65535; 
+        if (value > 65535) value = 65535;
         symbolTable[var] = static_cast<uint16_t>(value);
-        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " DECLARE: " + var + " = " + std::to_string(value));
-    } catch (...) {
-        //std::cerr << "Invalid value in DECLARE: " << args << "\n";
-        log.push_back("[" + timestamp + "] Core "+ std::to_string(getCurrentCore()) + " DECLARE: Invalid value in '" + args + "'");
+
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " DECLARE: " + var + " = " + std::to_string(value));
+    }
+    catch (...) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " DECLARE: Invalid value in '" + args + "'");
     }
 }
+
 
 void Process::execute_add(const std::string& args) {
     std::string timestamp = get_current_timestamp();

@@ -329,66 +329,112 @@ void MemoryManager::freeAllFramesForPid(int pid) {
 // Logic for memory read/write operations
 
 bool MemoryManager::readByte(int pid, size_t virtualAddress, char& outByte) {
-    Process* proc = processManager.get_process_by_pid(pid);
-    if (!proc) {
-        std::cerr << "readByte: Process " << pid << " not found.\n";
+    size_t physicalAddress;
+    if (!translate(pid, virtualAddress, physicalAddress)) {
         return false;
     }
 
-    size_t pageNum = virtualAddress / frameSize;
-    size_t offset = virtualAddress % frameSize;
+    size_t frameNum = physicalAddress / frameSize;
+    size_t offset = physicalAddress % frameSize;
 
-    auto& pageEntry = proc->getPageEntry(pageNum);
-    if (!pageEntry.valid) {
-        if (!handlePageFault(proc, pageNum)) {
-            std::cerr << "readByte: Failed to handle page fault for PID " << pid << ", page " << pageNum << "\n";
-            return false;
-        }
-    }
-
-    size_t frameNum = pageEntry.frameNumber;
-    if (frameNum >= memory.size()) {
-        std::cerr << "readByte: Frame number out of range.\n";
+    if (frameNum >= memory.size() || !memory[frameNum].data) {
+        std::cerr << "readByte: Frame data missing\n";
         return false;
     }
 
-    if (!memory[frameNum].data) {
-        std::cerr << "readByte: Frame " << frameNum << " data buffer is null.\n";
-        return false;
-    }
-
-    // Assuming MemoryFrame has a 'char* data' or std::vector<char> data for bytes
     outByte = memory[frameNum].data[offset];
     return true;
 }
 
-bool MemoryManager::writeByte(int pid, size_t virtualAddress, char value) {
+
+bool MemoryManager::writeByte(int pid, size_t virtualAddress, char inByte) {
+    size_t physicalAddress;
+    if (!translate(pid, virtualAddress, physicalAddress)) {
+        return false;
+    }
+
+    size_t frameNum = physicalAddress / frameSize;
+    size_t offset = physicalAddress % frameSize;
+
+    if (frameNum >= memory.size() || !memory[frameNum].data) {
+        std::cerr << "writeByte: Frame data missing\n";
+        return false;
+    }
+
+    memory[frameNum].data[offset] = inByte;
+
     Process* proc = processManager.get_process_by_pid(pid);
-    if (!proc) {
-        std::cerr << "writeByte: Process " << pid << " not found.\n";
-        return false;
+    if (proc) {
+        auto& pageEntry = proc->getPageEntry(frameNum);
+        pageEntry.dirty = true;
     }
-    size_t pageNum = virtualAddress / frameSize;
-    size_t offset = virtualAddress % frameSize;
-    auto& pageEntry = proc->getPageEntry(pageNum);
-    if (!pageEntry.valid) {
-        if (!handlePageFault(proc, pageNum)) {
-            std::cerr << "writeByte: Failed to handle page fault for PID " << pid << ", page " << pageNum << "\n";
-            return false;
-        }
-    }
-    size_t frameNum = pageEntry.frameNumber;
-    if (frameNum >= memory.size()) {
-        std::cerr << "writeByte: Frame number out of range.\n";
-        return false;
-    }
-    if (!memory[frameNum].data) {
-        std::cerr << "writeByte: Frame " << frameNum << " data buffer is null.\n";
-        return false;
-    }
-    // Write the byte and mark the page as dirty
-    memory[frameNum].data[offset] = value;
-    pageEntry.dirty = true;
 
     return true;
 }
+
+
+bool MemoryManager::translate(int pid, size_t virtualAddress, size_t& physicalAddress) {
+    Process* proc = processManager.get_process_by_pid(pid);
+    if (!proc) {
+        std::cerr << "translate: Process " << pid << " not found.\n";
+        return false;
+    }
+
+    size_t pageNum = virtualAddress / frameSize;
+    size_t offset = virtualAddress % frameSize;
+
+    if (pageNum >= proc->pageTable.size()) {
+        std::cerr << "translate: Page number " << pageNum << " out of range for PID " << pid << "\n";
+        return false;
+    }
+
+    auto& pageEntry = proc->getPageEntry(pageNum);
+
+    if (!pageEntry.valid) {
+        if (!handlePageFault(proc, pageNum)) {
+            std::cerr << "translate: Page fault handling failed for PID " << pid << ", page " << pageNum << "\n";
+            return false;
+        }
+    }
+
+    size_t frameNum = pageEntry.frameNumber;
+    if (frameNum >= memory.size()) {
+        std::cerr << "translate: Frame number out of range\n";
+        return false;
+    }
+
+    physicalAddress = frameNum * frameSize + offset;
+    if (physicalAddress >= memory.size() * frameSize) {
+        std::cerr << "translate: Physical address out of range\n";
+        return false;
+    }
+
+    return true;
+}
+
+
+
+// Already defined function — keep this
+bool MemoryManager::writeUInt16(int pid, uint32_t virtualAddress, uint16_t value) {
+    char lowByte = static_cast<char>(value & 0xFF);
+    char highByte = static_cast<char>((value >> 8) & 0xFF);
+
+    if (!writeByte(pid, virtualAddress, lowByte)) return false;
+    if (!writeByte(pid, virtualAddress + 1, highByte)) return false;
+
+    return true;
+}
+
+
+bool MemoryManager::readUInt16(int pid, uint32_t virtualAddress, uint16_t& outValue) {
+    char lowByte = 0, highByte = 0;
+
+    if (!readByte(pid, virtualAddress, lowByte)) return false;
+    if (!readByte(pid, virtualAddress + 1, highByte)) return false;
+
+    outValue = (static_cast<uint8_t>(highByte) << 8) | static_cast<uint8_t>(lowByte);
+    return true;
+}
+
+
+
