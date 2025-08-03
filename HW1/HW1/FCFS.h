@@ -36,6 +36,9 @@ private:
 	std::condition_variable cv;
 
 	MemoryManager* memoryManager = nullptr;
-	size_t memPerFrame = 0; 
+	size_t memPerFrame = 0;
 
+	//std::mutex admissionMutex;
+	//size_t reservedTotal = 0;
+	//std::unordered_map<int, size_t> reservedByPid;
 };

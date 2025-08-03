@@ -411,6 +411,12 @@ void vmstat() {
 		<< "  Running : " << running << "\n"
 		<< "  Sleeping: " << sleeping << "\n"
 		<< "  Finished: " << finished << "\n\n";
+
+	std::cout << "\n\033[32mCPU Ticks:\033[0m\n"
+		<< "  Idle   : " << (scheduler ? scheduler->getIdleCpuTicks() : 0) << "\n"
+		<< "  Active : " << (scheduler ? scheduler->getActiveCpuTicks() : 0) << "\n"
+		<< "  Total  : " << (scheduler ? scheduler->getTotalCpuTicks() : 0) << "\n";
+
 }
 
 /*****************************
