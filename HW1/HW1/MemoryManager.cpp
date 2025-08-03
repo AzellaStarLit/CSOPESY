@@ -50,11 +50,25 @@ bool MemoryManager::handlePageFault(Process* process, size_t pageNum)
         memory[frameIndex].occupied = true;
         memory[frameIndex].processId = process->getPID();
 
+        /*
         std::string pageData(frameSize, '\0');
         {
             std::lock_guard<std::mutex> swLock(swapMutex);
             readPage_nolock(process->getPID(), pageNum, pageData.data());
         }
+        */
+
+        // Allocate data buffer if not allocated yet
+        if (memory[frameIndex].data == nullptr) {
+            memory[frameIndex].data = new char[frameSize];
+        }
+
+        // Read the page from swap into frame's data buffer
+        {
+            std::lock_guard<std::mutex> swLock(swapMutex);
+            readPage_nolock(process->getPID(), pageNum, memory[frameIndex].data);
+        }
+
 
         ++totalPageIns;
         process->incrementPageIns();
@@ -91,7 +105,8 @@ bool MemoryManager::handlePageFault(Process* process, size_t pageNum)
                     if (ventry.dirty) {
                         std::string data(frameSize, '\0'); // (simulate payload)
                         std::lock_guard<std::mutex> swLock(swapMutex);
-                        writePage_nolock(victimPid, victimPageNum, data.data());
+                        //writePage_nolock(victimPid, victimPageNum, data.data());
+                        writePage_nolock(victimPid, victimPageNum, memory[victimFrame].data);
                         ++totalPageOuts;
                         victimProc->incrementPageOuts();
                     }
@@ -103,6 +118,14 @@ bool MemoryManager::handlePageFault(Process* process, size_t pageNum)
         }
 
         // reuse the victim frame for the faulting page
+
+        //these 3 lines are added
+		// Free the data buffer if it exists
+        if (memory[victimFrame].data != nullptr) {
+            delete[] memory[victimFrame].data;
+            memory[victimFrame].data = nullptr;
+        }
+
         memory[victimFrame].occupied = false;
         memory[victimFrame].processId = -1;
         targetFrame = victimFrame;
@@ -283,6 +306,12 @@ void MemoryManager::freeAllFramesForPid(int pid) {
     for (auto it = reversePageMap.begin(); it != reversePageMap.end(); ) {
         if (it->second.first == pid) {
             size_t f = it->first;
+
+            if (memory[f].data != nullptr) {
+                delete[] memory[f].data;
+                memory[f].data = nullptr;
+            }
+
             memory[f].occupied = false;
             memory[f].processId = -1;
             freeFrames.push_back(f);
@@ -295,4 +324,35 @@ void MemoryManager::freeAllFramesForPid(int pid) {
     // purge any stale entries at the front of FIFO
     while (!pageLoadOrder.empty() && !memory[pageLoadOrder.front()].occupied)
         pageLoadOrder.pop();
+}
+
+// Logic for memory read/write operations
+
+bool MemoryManager::readByte(int pid, size_t virtualAddress, char& outByte) {
+    Process* proc = processManager.get_process_by_pid(pid);
+    if (!proc) {
+        std::cerr << "readByte: Process " << pid << " not found.\n";
+        return false;
+    }
+
+    size_t pageNum = virtualAddress / frameSize;
+    size_t offset = virtualAddress % frameSize;
+
+    auto& pageEntry = proc->getPageEntry(pageNum);
+    if (!pageEntry.valid) {
+        if (!handlePageFault(proc, pageNum)) {
+            std::cerr << "readByte: Failed to handle page fault for PID " << pid << ", page " << pageNum << "\n";
+            return false;
+        }
+    }
+
+    size_t frameNum = pageEntry.frameNumber;
+    if (frameNum >= memory.size()) {
+        std::cerr << "readByte: Frame number out of range.\n";
+        return false;
+    }
+
+    // Assuming MemoryFrame has a 'char* data' or std::vector<char> data for bytes
+    outByte = memory[frameNum].data[offset];
+    return true;
 }

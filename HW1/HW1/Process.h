@@ -49,6 +49,8 @@ private:
     void execute_subtract(const std::string& args);
     void execute_sleep(const std::string& msString);
     void execute_for(const std::string& args, int coreId, int nestingLevel);
+    void execute_read(const std::string& args);
+    void execute_write(const std::string& args);
 
     size_t frameSize;
     MemoryManager* memoryManager;

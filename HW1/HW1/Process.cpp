@@ -90,20 +90,32 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
     std::string argument = instruction.substr(parenStart + 1, parenEnd - parenStart - 1);
 
   
-    if (command == "PRINT") { execute_print(argument, coreId);}
-    else if (command == "SLEEP") { execute_sleep(argument);}
-    else if (command == "DECLARE") { execute_declare(argument);}
-    else if (command == "ADD") { execute_add(argument);  }
-    else if (command == "SUBTRACT") { execute_subtract(argument);}
-    else if (command == "SLEEP") { execute_sleep(argument); }
-    else if (command == "FOR") { execute_for(argument, coreId, 1);}
+    if (command == "PRINT") { 
+        execute_print(argument, coreId);
+    }
+    else if (command == "SLEEP") { 
+        execute_sleep(argument);
+    }
+    else if (command == "DECLARE") { 
+        execute_declare(argument);
+    }
+    else if (command == "ADD") { 
+        execute_add(argument);  
+    }
+    else if (command == "SUBTRACT") { 
+        execute_subtract(argument);
+    }
+    else if (command == "SLEEP") { 
+        execute_sleep(argument); 
+    }
+    else if (command == "FOR") { 
+        execute_for(argument, coreId, 1);
+    }
     else if (command == "READ") {
-        // Placeholder for READ command
-       // std::cout << "READ command executed with argument: " << argument << std::endl;
+        execute_read(argument);
     }
     else if (command == "WRITE") {
-        // Placeholder for WRITE command
-        //std::cout << "WRITE command executed with argument: " << argument << std::endl;
+        execute_write(argument);
     }
     else {
         std::cout << "Unknown command: " << command << std::endl;
@@ -114,6 +126,91 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
         markFinished(); // Mark process as finished if all instructions are executed
     }
 }
+
+// this is the execution logic for the READ command
+void Process::execute_read(const std::string& args) {
+    std::string timestamp = get_current_timestamp();
+    
+    size_t openParen = args.find('(');
+    size_t comma = args.find(',');
+    size_t closeParen = args.find(')');
+
+    if (openParen == std::string::npos || comma == std::string::npos || closeParen == std::string::npos) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " READ: Invalid argument format: " + args);
+        return;
+    }
+
+    std::string var = args.substr(openParen + 1, comma - openParen - 1);
+    std::string addrStr = args.substr(comma + 1, closeParen - comma - 1);
+
+    // Trim whitespace (basic manual trimming)
+    var.erase(0, var.find_first_not_of(" \t"));
+    var.erase(var.find_last_not_of(" \t") + 1);
+    addrStr.erase(0, addrStr.find_first_not_of(" \t"));
+    addrStr.erase(addrStr.find_last_not_of(" \t") + 1);
+
+    size_t address = 0;
+    try {
+        address = std::stoul(addrStr);
+    }
+    catch (...) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " READ: Invalid address format: " + addrStr);
+        return;
+    }
+
+    // --- Try to read from memory ---
+    char byte = '\0';
+    if (!memoryManager->readByte(processId, address, byte)) {
+        symbolTable[var] = static_cast<uint16_t>(static_cast<unsigned char>(byte));
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " READ: Failed to read memory at address " + std::to_string(address));
+        return;
+    }
+
+    // --- Log the successful read ---
+    log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+        " READ: " + var + " = '" + std::string(1, byte) + "' from address " + std::to_string(address));
+}
+
+// this is the execution logic for the WRITE command
+void Process::execute_write(const std::string& args) {
+    std::string timestamp = get_current_timestamp();
+
+    size_t openParen = args.find('(');
+    size_t comma = args.find(',');
+    size_t closeParen = args.find(')');
+
+    if (openParen == std::string::npos || comma == std::string::npos || closeParen == std::string::npos) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE: Invalid argument format: " + args);
+        return;
+    }
+
+    std::string var = args.substr(openParen + 1, comma - openParen - 1);
+    std::string addrStr = args.substr(comma + 1, closeParen - comma - 1);
+
+    // Trim whitespace (basic manual trimming)
+    var.erase(0, var.find_first_not_of(" \t"));
+    var.erase(var.find_last_not_of(" \t") + 1);
+    addrStr.erase(0, addrStr.find_first_not_of(" \t"));
+    addrStr.erase(addrStr.find_last_not_of(" \t") + 1);
+
+    size_t address = 0;
+    try {
+        address = std::stoul(addrStr);
+    }
+    catch (...) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE: Invalid address format: " + addrStr);
+        return;
+    }
+}
+
+
+//function to check valid address
+
 
 //this is the execution logic of the PRINT command
 void Process::execute_print(const std::string& msg, int coreId) {
