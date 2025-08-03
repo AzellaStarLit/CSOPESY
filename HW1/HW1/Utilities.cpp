@@ -455,21 +455,22 @@ std::vector<std::string> generate_instructions() {
 
 	//TODO: EDIT Instructions for more variety
 	static const std::string templates[] = {
-			"DECLARE(var_x, 100)",
-			"DECLARE(var_y, 50)",
-			"ADD(var_x, var_x, var_y)",
-			"SUBTRACT(var_x, var_y, var_x)",
-			"SLEEP(300)",
-			"SLEEP(2000)",
-			"FOR([PRINT(\"Looping inside process\")], 2)",
-			"FOR([ADD(var_x, var_x, 1)], 2)",
-			"FOR([SUBTRACT(var_x, var_y, 1)], 2)",
-			"PRINT(\"Hello world from process\")",
-			"PRINT(\"We love CSOPESY <3\")",
-			"PRINT(\"Value from: \" +var_x)",
-			"WRITE(var_x, 100)",
-			"READ(var_y, 50)",
+		"DECLARE(var_x, 100)",
+		"DECLARE(var_y, 50)",
+		"ADD(var_x, var_x, var_y)",
+		"SUBTRACT(var_x, var_y, var_x)",
+		"SLEEP(300)",
+		"SLEEP(2000)",
+		"FOR([PRINT(\"Looping inside process\")], 2)",
+		"FOR([ADD(var_x, var_x, 1)], 10)",
+		"FOR([SUBTRACT(var_x, var_x, 1)], 10)",
+		"PRINT(\"Hello world from process\")",
+		"PRINT(\"We love CSOPESY <3\")",
+		"PRINT(\"Value from: \" +var_x)",
+		"WRITE(var_x, 100)",
+		"READ(var_y, 50)"
 	};
+
 
 	std::random_device rd;
 	std::mt19937 gen(rd());

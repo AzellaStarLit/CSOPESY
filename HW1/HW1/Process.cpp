@@ -130,19 +130,16 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
 // this is the execution logic for the READ command
 void Process::execute_read(const std::string& args) {
     std::string timestamp = get_current_timestamp();
-    
-    size_t openParen = args.find('(');
-    size_t comma = args.find(',');
-    size_t closeParen = args.find(')');
 
-    if (openParen == std::string::npos || comma == std::string::npos || closeParen == std::string::npos) {
+    size_t comma = args.find(',');
+    if (comma == std::string::npos) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " READ: Invalid argument format: " + args);
         return;
     }
 
-    std::string var = args.substr(openParen + 1, comma - openParen - 1);
-    std::string addrStr = args.substr(comma + 1, closeParen - comma - 1);
+    std::string var = args.substr(0, comma);
+    std::string addrStr = args.substr(comma + 1);
 
     // Trim whitespace (basic manual trimming)
     var.erase(0, var.find_first_not_of(" \t"));
@@ -178,51 +175,47 @@ void Process::execute_read(const std::string& args) {
 void Process::execute_write(const std::string& args) {
     std::string timestamp = get_current_timestamp();
 
-    size_t openParen = args.find('(');
     size_t comma = args.find(',');
-    size_t closeParen = args.find(')');
-
-    if (openParen == std::string::npos || comma == std::string::npos || closeParen == std::string::npos) {
+    if (comma == std::string::npos) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " WRITE: Invalid argument format: " + args);
         return;
     }
 
-    std::string var = args.substr(openParen + 1, comma - openParen - 1);
-    std::string addrStr = args.substr(comma + 1, closeParen - comma - 1);
+    std::string addrStr = args.substr(0, comma);
+    std::string valueStr = args.substr(comma + 1);
 
     // Trim whitespace (basic manual trimming)
-    var.erase(0, var.find_first_not_of(" \t"));
-    var.erase(var.find_last_not_of(" \t") + 1);
     addrStr.erase(0, addrStr.find_first_not_of(" \t"));
     addrStr.erase(addrStr.find_last_not_of(" \t") + 1);
+    valueStr.erase(0, valueStr.find_first_not_of(" \t"));
+    valueStr.erase(valueStr.find_last_not_of(" \t") + 1);
 
     size_t address = 0;
+    int value = 0;
     try {
         address = std::stoul(addrStr);
+        value = std::stoi(valueStr);
     }
     catch (...) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " WRITE: Invalid address format: " + addrStr);
+            " WRITE: Invalid address or value format: " + args);
         return;
     }
 
-    // Check if variable exists
-    if (symbolTable.find(var) == symbolTable.end()) {
+    if (value < 0 || value > 255) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " WRITE: Variable '" + var + "' not declared.");
+            " WRITE: Value out of byte range (0-255): " + std::to_string(value));
         return;
     }
 
-    uint16_t value = symbolTable[var];
-    char byteToWrite = static_cast<char>(value & 0xFF); // lower byte
+    char byteToWrite = static_cast<char>(value);
 
     bool success = memoryManager->writeByte(processId, address, byteToWrite);
 
     if (success) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " WRITE: " + var + " (" + std::to_string(value) +
-            ")  memory[" + std::to_string(address) + "] = " + std::to_string(static_cast<int>(byteToWrite)));
+            " WRITE: memory[" + std::to_string(address) + "] = " + std::to_string(value));
     }
     else {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
