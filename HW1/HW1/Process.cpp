@@ -149,29 +149,29 @@ void Process::execute_read(const std::string& args) {
 
     size_t address = 0;
     try {
-        address = std::stoul(addrStr);
+        // Parse hex address (e.g. "0x1000")
+        address = std::stoul(addrStr, nullptr, 16);
     }
     catch (...) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " READ: Invalid address format: " + addrStr);
+            " READ: Invalid hex address format: " + addrStr);
         return;
     }
 
     uint16_t value = 0;
-    bool success = memoryManager->readUInt16(processId, address, value);
+    bool success = memoryManager->readUInt16(processId, static_cast<uint32_t>(address), value);
 
     if (success) {
         symbolTable[var] = value;
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " READ: " + var + " = " + std::to_string(value) + " from address " + std::to_string(address));
+            " READ: " + var + " = " + std::to_string(value) + " from address 0x" + addrStr);
     }
     else {
         symbolTable[var] = 0;  // Default to 0 if failed
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " READ FAILED: Could not read from memory[" + std::to_string(address) + "]");
+            " READ FAILED: Could not read from memory[0x" + addrStr + "]");
     }
 }
-
 
 // this is the execution logic for the WRITE command
 void Process::execute_write(const std::string& args) {
@@ -196,12 +196,13 @@ void Process::execute_write(const std::string& args) {
     size_t address = 0;
     int value = 0;
     try {
-        address = std::stoul(addrStr);
+        // Parse hex address
+        address = std::stoul(addrStr, nullptr, 16);
         value = std::stoi(valueStr);
     }
     catch (...) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " WRITE: Invalid address or value format: " + args);
+            " WRITE: Invalid hex address or value format: " + args);
         return;
     }
 
@@ -211,15 +212,15 @@ void Process::execute_write(const std::string& args) {
         return;
     }
 
-    bool success = memoryManager->writeUInt16(processId, address, static_cast<uint16_t>(value));
+    bool success = memoryManager->writeUInt16(processId, static_cast<uint32_t>(address), static_cast<uint16_t>(value));
 
     if (success) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " WRITE: memory[" + std::to_string(address) + "] = " + std::to_string(value));
+            " WRITE: memory[0x" + addrStr + "] = " + std::to_string(value));
     }
     else {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " WRITE FAILED: Could not write to memory[" + std::to_string(address) + "]");
+            " WRITE FAILED: Could not write to memory[0x" + addrStr + "]");
     }
 }
 
@@ -293,6 +294,13 @@ void Process::execute_declare(const std::string& args) {
     trim(var);
     trim(valStr);
 
+    // Enforce symbol table size limit (max 32 vars)
+    if (symbolTable.size() >= 32) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " DECLARE: Symbol table full, cannot declare '" + var + "'");
+        return;
+    }
+
     // Get virtual address for the variable (pass var only!)
     size_t virtualAddr = getVirtualAddressForVar(var);
     size_t pageNum = virtualAddr / frameSize;
@@ -308,10 +316,21 @@ void Process::execute_declare(const std::string& args) {
     try {
         uint32_t value = std::stoul(valStr);
         if (value > 65535) value = 65535;
-        symbolTable[var] = static_cast<uint16_t>(value);
+        uint16_t val16 = static_cast<uint16_t>(value);
+
+        // Store in symbol table
+        symbolTable[var] = val16;
+
+        // Write uint16 value into memory at virtualAddr (2 bytes)
+        bool writeSuccess = memoryManager->writeUInt16(processId, static_cast<uint32_t>(virtualAddr), val16);
+        if (!writeSuccess) {
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " DECLARE: Failed to write variable '" + var + "' to memory at virtual address " + std::to_string(virtualAddr));
+            return;
+        }
 
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " DECLARE: " + var + " = " + std::to_string(value));
+            " DECLARE: " + var + " = " + std::to_string(val16));
     }
     catch (...) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +

@@ -469,8 +469,18 @@ std::vector<std::string> generate_instructions() {
 		"PRINT(\"We love CSOPESY <3\")",
 		"PRINT(\"Value from: \" +var_x)",
 		*/
-		"WRITE(50, 100)",
-		"READ(var_y, 50)"
+		"WRITE(0x50, 200)",
+		"READ(var_y, 0x50)",
+		"DECLARE(var_big, 70000)",
+		"READ(var_big, 0x100)",
+		"WRITE(0xFFFFF, 123)",      // Out of range memory address
+		"WRITE(0x10, -5)",          // Negative value invalid
+		"WRITE(0x10, 70000)",       // Value too large
+		"WRITE(hello, 100)",        // Invalid address format
+		"READ(var_bad, 0xFFFFF)",   // Out of range address
+		"READ(var_bad2, hello)",    // Invalid address format
+		"READ(var_uninit, 0x2000)",  // Read uninitialized memory (should return 0)
+
 	};
 
 
