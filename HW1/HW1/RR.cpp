@@ -95,11 +95,14 @@ void RRScheduler::worker_loop(int coreId)
         }
 
         /* --------- bookkeeping --------- */
+        // THIS IS FOR MEMORY STAMP
+        /*
         {
             std::lock_guard<std::mutex> g(fileMutex);
             if (++quantumCycleCounter % timeQuantum == 0)
                 memoryManager->snapshotMemoryToFile(quantumCycleCounter);
         }
+        */
 
         if (process->isFinished()) {
             process->markFinished();

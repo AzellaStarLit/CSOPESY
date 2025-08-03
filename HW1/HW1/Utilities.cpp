@@ -146,24 +146,17 @@ void report_util() { // report-util logic
 	std::cout << "\033[32mReport saved to csopesy-log.txt\033[0m\n";
 }
 
-/*
 void process_smi() {
 	auto allProcesses = processManager.getAllProcesses();
 
+	//which processes are actually running now
 	std::unordered_set<int> runningPids;
-
 	if (scheduler) {
 		auto pidsPerCore = scheduler->getCurrentPidsPerCore(); // [-1, pid, ...]
 		for (int pid : pidsPerCore) if (pid != -1) runningPids.insert(pid);
 	}
 
-	size_t usedBytes = 0;
-
-	if (memoryManager) {
-		usedBytes = memoryManager->getUsedFrames() * memoryManager->getFrameSize();
-	}
-
-	size_t totalUsedMemory = 0;
+	size_t totalUsedMemory = memoryManager->getUsedFrames() * configManager.getMemPerFrame();
 
 	const size_t columnWidthName = 20;
 	const size_t columnWidthMem = 15;
@@ -177,7 +170,7 @@ void process_smi() {
 
 	std::cout << "\033[32m" << std::left
 		<< std::setw(W_NAME) << "Process"
-		<< std::setw(W_MEM) << "Mem(KB)"
+		<< std::setw(W_MEM) << "Mem(K)"
 		<< std::setw(W_PGIN) << "PgIn"
 		<< std::setw(W_PGOUT) << "PgOut"
 		<< std::setw(W_STAT) << "Status"
@@ -186,23 +179,27 @@ void process_smi() {
 
 	for (auto* p : allProcesses)
 	{
+		if (!p) continue;
+
 		std::cout << std::left
 			<< std::setw(W_NAME) << p->getName()
 			<< std::setw(W_MEM) << p->getMemoryUsage()
 			<< std::setw(W_PGIN) << p->getPageIns()
 			<< std::setw(W_PGOUT) << p->getPageOuts();
 
-		std::string state = p->isFinished() ? "Finished"
-			: (p->isSleeping() ? "Sleeping" : "Running");
+		//check if finished or running, otherwise, label it sleeping
+		std::string state =
+			p->isFinished() ? "Finished" :
+			(runningPids.count(p->getPID()) ? "Running" : "Sleeping");
 		std::cout << std::setw(W_STAT) << state << "\n";
 	}
 
 	std::cout << "\n\033[32m"
 		<< "Total Processes: " << allProcesses.size() << "\n"
-		<< "Total Used Memory: " << totalUsedMemory << " / "
-		<< configManager.getMaxOverallMem() << " KB"
+		<< "Total Used Memory: " << totalUsedMemory << "K / "
+		<< configManager.getMaxOverallMem() << "K"
 		<< "\033[0m\n\n";
-}*/
+}
 
 /*
 void process_smi() {
@@ -270,6 +267,7 @@ void process_smi() {
 }
 */
 
+/*
 void process_smi() {
 	auto all = processManager.getAllProcesses();
 
@@ -316,7 +314,7 @@ void process_smi() {
 		<< "\033[0m\n\n";
 }
 
-
+*/
 /*
 void vmstat() {
 	auto all = processManager.getAllProcesses();
@@ -452,9 +450,9 @@ std::vector<std::string> generate_instructions() {
 			"SUBTRACT(var_x, var_y, var_x)",
 			"SLEEP(300)",
 			"SLEEP(2000)",
-			//"FOR([PRINT(\"Looping inside process\")], 2)",
-			//"FOR([ADD(var_x, var_x, 1)], 2)",
-			//"FOR([SUBTRACT(var_x, var_y, 1)], 2)",
+			"FOR([PRINT(\"Looping inside process\")], 2)",
+			"FOR([ADD(var_x, var_x, 1)], 2)",
+			"FOR([SUBTRACT(var_x, var_y, 1)], 2)",
 			"PRINT(\"Hello world from process\")",
 			"PRINT(\"We love CSOPESY <3\")",
 			"PRINT(\"Value from: \" +var_x)"

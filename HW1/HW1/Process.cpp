@@ -64,32 +64,6 @@ void Process::add_instruction(const std::string& instr) {
     totalLines = instructions.size();
 }
 
-//this will generate and add instructions to the list
-void Process::generate_instructions() {
-    int count = 10; //for testing only, this should come from random number based on config range
-
-    for (int i = 0; i < count; ++i) {
-        add_instruction("print: Hello World! from " + name + " [Line " + std::to_string(i + 1) + "]");
-        totalLines = instructions.size();
-    }
-}
-
-//this will generate random instructions from a predefined set
-std::string Process::generate_rand_instruction() {
-    static const std::string instructions[] = {
-        "PRINT(\"\")",
-        "PRINT(\"Processing...\")",
-        "PRINT(\"We love CSOPESY <3\")",
-    };
-
-    //TODO: EDIT TO READ CONFIGURATION FILE FOR RANGE
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_int_distribution<> dis(0, sizeof(instructions) - 1);
-
-    return instructions[dis(gen)];
-}
-
 
 void Process::load_instructions(const std::vector<std::string>& instrs) {
     // Clear existing instructions if needed
@@ -105,7 +79,7 @@ void Process::load_instructions(const std::vector<std::string>& instrs) {
 //this looks for the generated instructions in the list and calls the corresponding function to execute it 
 void Process::execute_instruction(const std::string& instruction, int coreId) {
     size_t parenStart = instruction.find('(');
-    size_t parenEnd = instruction.find(')', parenStart);
+    size_t parenEnd = instruction.rfind(')');
 
     if (parenStart == std::string::npos || parenEnd == std::string::npos) {
         std::cout << "Invalid instruction format: " << instruction << std::endl;
@@ -148,6 +122,8 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
     }
     else if (command == "FOR") {
         execute_for(argument, coreId, 1);
+        instructionPointer++;
+        if (instructionPointer >= totalLines) markFinished();
     }
     else {
         std::cout << "Unknown command: " << command << std::endl;
@@ -236,9 +212,16 @@ void Process::execute_add(const std::string& args) {
     std::string timestamp = get_current_timestamp();
     std::istringstream ss(args);
     std::string var1, var2, var3;
-    getline(ss, var1, ',');
-    getline(ss, var2, ',');
-    getline(ss, var3, ',');
+
+    auto trim = [](std::string s) -> std::string {
+        s.erase(0, s.find_first_not_of(" \t"));
+        s.erase(s.find_last_not_of(" \t") + 1);
+        return s;
+    };
+
+    getline(ss, var1, ','); var1 = trim(var1);
+    getline(ss, var2, ','); var2 = trim(var2);
+    getline(ss, var3, ','); var3 = trim(var3);
 
     size_t virtualAddr = getVirtualAddressForVar(args);
     size_t pageNum = virtualAddr / frameSize;
@@ -268,9 +251,16 @@ void Process::execute_subtract(const std::string& args) {
     std::string timestamp = get_current_timestamp();
     std::istringstream ss(args);
     std::string var1, var2, var3;
-    getline(ss, var1, ',');
-    getline(ss, var2, ',');
-    getline(ss, var3, ',');
+
+    auto trim = [](std::string s) -> std::string {
+        s.erase(0, s.find_first_not_of(" \t"));
+        s.erase(s.find_last_not_of(" \t") + 1);
+        return s;
+    };
+
+    getline(ss, var1, ','); var1 = trim(var1);
+    getline(ss, var2, ','); var2 = trim(var2);
+    getline(ss, var3, ','); var3 = trim(var3);
 
     size_t virtualAddr = getVirtualAddressForVar(args);
     size_t pageNum = virtualAddr / frameSize;
@@ -318,18 +308,38 @@ void Process::execute_for(const std::string& args, int coreId, int nestingLevel)
         return;
     }
 
-    // Find [ ... ] and repeat count
-    size_t openBracket = args.find('[');
-    size_t closeBracket = args.find(']', openBracket);
+    std::string trimmedArgs = args;
+    trimmedArgs.erase(0, trimmedArgs.find_first_not_of(" \t\n"));
+    trimmedArgs.erase(trimmedArgs.find_last_not_of(" \t\n") + 1);
 
-    if (openBracket == std::string::npos || closeBracket == std::string::npos) {
-        //std::cerr << "Invalid FOR loop format: missing brackets.\n";
-        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " FOR: Invalid format - missing brackets.");
+    if (trimmedArgs.empty()) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " FOR: Empty FOR arguments.");
         return;
     }
 
-    std::string instructionBlock = args.substr(openBracket + 1, closeBracket - openBracket - 1);
-    std::string repeatStr = args.substr(closeBracket + 2); // skip ", "
+    // Find [ ... ] and repeat count
+    size_t openBracket = trimmedArgs.find('[');
+    size_t closeBracket = trimmedArgs.find(']', openBracket);
+
+    static bool alreadyErrored = false;
+
+    if (openBracket == std::string::npos || closeBracket == std::string::npos || closeBracket <= openBracket) {
+        //std::cerr << "Invalid FOR loop format: missing brackets.\n";
+        if (!alreadyErrored) {
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " FOR: Invalid format - missing brackets.");
+            alreadyErrored = true;
+        }
+        return;
+    }
+
+    std::string instructionBlock = trimmedArgs.substr(openBracket + 1, closeBracket - openBracket - 1);
+    size_t commaAfterBracket = trimmedArgs.find(',', closeBracket + 1);
+    if (commaAfterBracket == std::string::npos) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " FOR: Invalid format - missing repeat count.");
+        return;
+    }
+    std::string repeatStr = trimmedArgs.substr(commaAfterBracket + 1);
+    repeatStr.erase(0, repeatStr.find_first_not_of(" \t"));
 
     int repeatCount = 0;
     try {
@@ -349,7 +359,7 @@ void Process::execute_for(const std::string& args, int coreId, int nestingLevel)
         if (c == '[') bracketDepth++;
         if (c == ']') bracketDepth--;
 
-        if ((c == ',' || c == ';') && bracketDepth == 0) {
+        if ((c == ';') && bracketDepth == 0) {
             if (!current.empty()) {
                 innerInstructions.push_back(current);
                 current.clear();
