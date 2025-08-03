@@ -198,6 +198,12 @@ bool screen_command(const std::string& command) {
 			return false;
 		}
 
+		//if the process encountered a memory access violation
+		if(processManager.get_process(name)->getStatus() == ProcessStatus::Terminated) {
+			std::cout << "\033[31mProcess '" << name << "' encountered a memory access violation.\033[0m\n";
+			return false;
+		}
+
 		//if the process is already finished
 		if (processManager.get_process(name)->isFinished()) {
 			std::cout << "Process '" << name << "' has already finished.\n";

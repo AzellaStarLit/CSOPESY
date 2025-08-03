@@ -164,12 +164,15 @@ void Process::execute_read(const std::string& args) {
     if (success) {
         symbolTable[var] = value;
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " READ: " + var + " = " + std::to_string(value) + " from address 0x" + addrStr);
+            " READ: " + var + " = " + std::to_string(value) + " from address " + addrStr);
     }
     else {
         symbolTable[var] = 0;  // Default to 0 if failed
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " READ FAILED: Could not read from memory[0x" + addrStr + "]");
+            " READ FAILED: Could not read from memory[" + addrStr + "]");
+        markFinished();
+        setCompletionTimestamp();
+		status = ProcessStatus::Terminated; // Set status to Terminated on failure
     }
 }
 
@@ -216,11 +219,14 @@ void Process::execute_write(const std::string& args) {
 
     if (success) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " WRITE: memory[0x" + addrStr + "] = " + std::to_string(value));
+            " WRITE: memory[" + addrStr + "] = " + std::to_string(value));
     }
     else {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " WRITE FAILED: Could not write to memory[0x" + addrStr + "]");
+            " WRITE FAILED: Could not write to memory[" + addrStr + "]");
+        markFinished();
+        setCompletionTimestamp();
+        status = ProcessStatus::Terminated; // Set status to Terminated on failure
     }
 }
 
