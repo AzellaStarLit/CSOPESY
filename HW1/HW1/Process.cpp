@@ -206,6 +206,28 @@ void Process::execute_write(const std::string& args) {
             " WRITE: Invalid address format: " + addrStr);
         return;
     }
+
+    // Check if variable exists
+    if (symbolTable.find(var) == symbolTable.end()) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE: Variable '" + var + "' not declared.");
+        return;
+    }
+
+    uint16_t value = symbolTable[var];
+    char byteToWrite = static_cast<char>(value & 0xFF); // lower byte
+
+    bool success = memoryManager->writeByte(processId, address, byteToWrite);
+
+    if (success) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE: " + var + " (" + std::to_string(value) +
+            ")  memory[" + std::to_string(address) + "] = " + std::to_string(static_cast<int>(byteToWrite)));
+    }
+    else {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE FAILED: Could not write to memory[" + std::to_string(address) + "]");
+    }
 }
 
 

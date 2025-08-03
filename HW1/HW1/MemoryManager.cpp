@@ -352,7 +352,43 @@ bool MemoryManager::readByte(int pid, size_t virtualAddress, char& outByte) {
         return false;
     }
 
+    if (!memory[frameNum].data) {
+        std::cerr << "readByte: Frame " << frameNum << " data buffer is null.\n";
+        return false;
+    }
+
     // Assuming MemoryFrame has a 'char* data' or std::vector<char> data for bytes
     outByte = memory[frameNum].data[offset];
+    return true;
+}
+
+bool MemoryManager::writeByte(int pid, size_t virtualAddress, char value) {
+    Process* proc = processManager.get_process_by_pid(pid);
+    if (!proc) {
+        std::cerr << "writeByte: Process " << pid << " not found.\n";
+        return false;
+    }
+    size_t pageNum = virtualAddress / frameSize;
+    size_t offset = virtualAddress % frameSize;
+    auto& pageEntry = proc->getPageEntry(pageNum);
+    if (!pageEntry.valid) {
+        if (!handlePageFault(proc, pageNum)) {
+            std::cerr << "writeByte: Failed to handle page fault for PID " << pid << ", page " << pageNum << "\n";
+            return false;
+        }
+    }
+    size_t frameNum = pageEntry.frameNumber;
+    if (frameNum >= memory.size()) {
+        std::cerr << "writeByte: Frame number out of range.\n";
+        return false;
+    }
+    if (!memory[frameNum].data) {
+        std::cerr << "writeByte: Frame " << frameNum << " data buffer is null.\n";
+        return false;
+    }
+    // Write the byte and mark the page as dirty
+    memory[frameNum].data[offset] = value;
+    pageEntry.dirty = true;
+
     return true;
 }

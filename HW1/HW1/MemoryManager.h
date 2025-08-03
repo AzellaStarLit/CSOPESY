@@ -87,5 +87,5 @@ public:
 
     // read/write memory
     bool readByte(int pid, size_t virtualAddress, char& outByte);
-    //bool writeByte(int pid, size_t virtualAddress, char inByte);
+    bool writeByte(int pid, size_t virtualAddress, char inByte);
 };
