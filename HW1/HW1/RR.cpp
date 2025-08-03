@@ -82,10 +82,14 @@ void RRScheduler::worker_loop(int coreId)
 
 
         /* --------- run one quantum --------- */
+       /*
         {
             std::lock_guard<std::mutex> g(statsMutex);
             coreActive[coreId] = true;
-        }
+            currentPidPerCore[coreId] = process->getPID();
+        }*/
+
+        markCoreRunning(coreId, process->getPID());
         process->setCurrentCore(coreId);
 		process->setStatus(ProcessStatus::Running);
 
@@ -107,6 +111,11 @@ void RRScheduler::worker_loop(int coreId)
         if (process->isFinished()) {
             process->markFinished();
 
+            if (memoryManager) {
+                memoryManager->freeAllFramesForPid(process->getPID());
+                memoryManager->unregisterProcessSwap(process->getPID());
+            }
+            
             /* free its last resident frame(s) --------------------------- 
             size_t bytes = process->getMemoryUsage();
             size_t frames = std::max<size_t>(1, (bytes + memPerFrame - 1) / memPerFrame);
@@ -119,11 +128,14 @@ void RRScheduler::worker_loop(int coreId)
             process->setStatus(ProcessStatus::Ready);
             add_process(process);       // round?robin back to tail
         }
-
+        /*
         {
             std::lock_guard<std::mutex> g(statsMutex);
             coreActive[coreId] = false;
-        }
+            currentPidPerCore[coreId] = -1;
+        }*/
+
+        markCoreIdle(coreId);
     }
 }
 

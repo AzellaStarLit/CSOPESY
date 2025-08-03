@@ -39,16 +39,43 @@ void FCFSScheduler::worker_loop(int coreId) {
 
 		if (!process || process->isFinished()) continue;
 
+		size_t framesNeeded = std::max<size_t>(
+			1, (process->getMemoryUsage() + memPerFrame - 1) / memPerFrame);
+
+		/*
 		if (!process->hasResidentPage() && memoryManager->getFreeFrames() == 0) {
 			add_process(process);
 			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			continue;
-		}
+		}*/
 
+		bool reservedNow = false;
+
+		if (!process->hasResidentPage()) {
+			std::unique_lock<std::mutex> lk(admissionMutex);
+			size_t totalFrames = memoryManager ? memoryManager->getFreeFrames() : 0;
+			size_t freeForStart = (totalFrames >= reservedFrames)
+				? (totalFrames - reservedFrames)
+				: 0;
+
+			if (freeForStart < framesNeeded) {
+				lk.unlock();
+				add_process(process);
+
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				continue;
+			}
+
+			reservedFrames += framesNeeded;
+			reservedNow = true;
+		}
+		/*
 		{
 			std::lock_guard<std::mutex> statsLock(statsMutex);
 			coreActive[coreId] = true; // mark this core as active
-		}
+			currentPidPerCore[coreId] = process->getPID();
+		}*/
+		markCoreRunning(coreId, process->getPID());
 		process->setCurrentCore(coreId); //set the current core executing this process
 		process->setStatus(ProcessStatus::Running);
 
@@ -57,11 +84,14 @@ void FCFSScheduler::worker_loop(int coreId) {
 			if (uint32_t d = getDelayPerExec(); d)
 				std::this_thread::sleep_for(std::chrono::milliseconds(d));
 		}
-
+		/*
 		{
 			std::lock_guard<std::mutex> statsLock(statsMutex);
 			coreActive[coreId] = false;
-		}
+			currentPidPerCore[coreId] = -1;
+		}*/
+
+		markCoreIdle(coreId);
 		process->markFinished();
 
 		if (memoryManager) memoryManager->freeAllFramesForPid(process->getPID());

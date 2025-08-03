@@ -53,8 +53,6 @@ Process::Process(const std::string& name, size_t memorySize, size_t frameSize, M
     frameSize(frameSize), memoryManager(memoryManager), status(ProcessStatus::New) {
 
     //std::cout << "Process created with name: " << name << " and memory size: " << memorySize << std::endl;
-    
-    // TODO: Remove individual backing store per process
     //initializeBackingStore();
 }
 
@@ -384,7 +382,7 @@ void Process::incrementInstructionPointer() {
 }
 
 //------------------BACKING STORE------------------//
-
+/*
 void Process::initializeBackingStore() {
     std::filesystem::create_directory("csopesy-backing-store");
 
@@ -398,11 +396,12 @@ void Process::initializeBackingStore() {
         out.write(blankPage.c_str(), 1024);
     }
     out.close();
-}
-
+}*/
+/*
 const std::string& Process::getBackingStorePath() const {
     return backingStorePath;
 }
+*/
 
 bool Process::hasResidentPage() const {
     for (const auto& kv : pageTable) {
