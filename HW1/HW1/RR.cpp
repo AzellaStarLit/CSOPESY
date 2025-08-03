@@ -91,6 +91,7 @@ void RRScheduler::worker_loop(int coreId)
 
         for (int i = 0; i < timeQuantum && !process->isFinished(); ++i) {
             process->execute_instruction(process->getCurrentInstruction(), coreId);
+            incrementTick(true); //count CPU active ticks
             if (uint32_t d = getDelayPerExec(); d) std::this_thread::sleep_for(std::chrono::milliseconds(d));
         }
 
@@ -130,6 +131,7 @@ void RRScheduler::worker_loop(int coreId)
         }*/
 
         markCoreIdle(coreId);
+        incrementTick(false); //idle tick
     }
 }
 

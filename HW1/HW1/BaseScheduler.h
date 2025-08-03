@@ -19,6 +19,19 @@ protected:
 
 	std::vector<int> currentPidPerCore;
 	std::vector<std::chrono::steady_clock::time_point> lastActive;
+
+	size_t totalCpuTicks = 0;
+	size_t activeCpuTicks = 0;
+	size_t idleCpuTicks = 0;
+	std::mutex tickMutex;
+
+	void incrementTick(bool isActive) {
+		std::lock_guard<std::mutex> lock(tickMutex);
+		totalCpuTicks++;
+		if (isActive) activeCpuTicks++;
+		else idleCpuTicks++;
+	}
+
 public: 
 
 	//constructor/deconstructor
@@ -98,4 +111,19 @@ public:
 		for (int p : currentPidPerCore) if (p == pid) return true;
 		return false;
 	}
+
+	//getters for cpu ticks
+	size_t getTotalCpuTicks() {
+		std::lock_guard<std::mutex> lock(tickMutex);
+		return totalCpuTicks;
+	}
+	size_t getActiveCpuTicks(){
+		std::lock_guard<std::mutex> lock(tickMutex);
+		return activeCpuTicks;
+	}
+	size_t getIdleCpuTicks() {
+		std::lock_guard<std::mutex> lock(tickMutex);
+		return idleCpuTicks;
+	}
+
 };

@@ -51,6 +51,7 @@ void FCFSScheduler::worker_loop(int coreId) {
 
 		bool reservedNow = false;
 
+		/*
 		if (!process->hasResidentPage()) {
 			std::unique_lock<std::mutex> lk(admissionMutex);
 			size_t totalFrames = memoryManager ? memoryManager->getFreeFrames() : 0;
@@ -68,7 +69,21 @@ void FCFSScheduler::worker_loop(int coreId) {
 
 			reservedFrames += framesNeeded;
 			reservedNow = true;
+		}*/
+
+		if (!process->hasResidentPage()) {
+			// If no memory manager, just run; otherwise ensure a free frame exists.
+			if (memoryManager && memoryManager->getFreeFrames() == 0) {
+				add_process(process);                               // requeue
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				continue;
+			}
+			// Convert admission to a real allocation: fault in page 0.
+			if (memoryManager) {
+				memoryManager->handlePageFault(process, 0);
+			}
 		}
+
 		/*
 		{
 			std::lock_guard<std::mutex> statsLock(statsMutex);
@@ -80,6 +95,7 @@ void FCFSScheduler::worker_loop(int coreId) {
 
 		while (!process->isFinished()) {
 			process->execute_instruction(process->getCurrentInstruction(), coreId);
+			incrementTick(true); //count active cpu ticks
 			if (uint32_t d = getDelayPerExec(); d)
 				std::this_thread::sleep_for(std::chrono::milliseconds(d));
 		}
