@@ -279,7 +279,6 @@ void Process::execute_print(const std::string& msg, int coreId) {
 }
 
 void Process::execute_declare(const std::string& args) {
-
     size_t comma = args.find(',');
     std::string timestamp = get_current_timestamp();
 
@@ -292,7 +291,7 @@ void Process::execute_declare(const std::string& args) {
     std::string var = args.substr(0, comma);
     std::string valStr = args.substr(comma + 1);
 
-    // Trim whitespace on both var and valStr
+    // Trim whitespace
     auto trim = [](std::string& s) {
         s.erase(0, s.find_first_not_of(" \t"));
         s.erase(s.find_last_not_of(" \t") + 1);
@@ -301,23 +300,10 @@ void Process::execute_declare(const std::string& args) {
     trim(var);
     trim(valStr);
 
-    // Enforce symbol table size limit (max 32 vars)
     if (symbolTable.size() >= 32) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " DECLARE: Symbol table full, cannot declare '" + var + "'");
         return;
-    }
-
-    // Get virtual address for the variable (pass var only!)
-    size_t virtualAddr = getVirtualAddressForVar(var);
-    size_t pageNum = virtualAddr / frameSize;
-
-    if (!pageTable[pageNum].valid) {
-        if (!memoryManager->handlePageFault(this, pageNum)) {
-            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-                " DECLARE: Failed to handle page fault for " + var);
-            return;
-        }
     }
 
     try {
@@ -325,11 +311,18 @@ void Process::execute_declare(const std::string& args) {
         if (value > 65535) value = 65535;
         uint16_t val16 = static_cast<uint16_t>(value);
 
-        // Store in symbol table
+        // Store in symbol table first
         symbolTable[var] = val16;
+
+        // Ensure page is resident and mark dirty (handle page faults here)
         touchForWriteVar(var);
-        // Write uint16 value into memory at virtualAddr (2 bytes)
+
+        // Get virtual address for the variable
+        size_t virtualAddr = getVirtualAddressForVar(var);
+
+        // Write value into memory at virtual address
         bool writeSuccess = memoryManager->writeUInt16(processId, static_cast<uint32_t>(virtualAddr), val16);
+
         if (!writeSuccess) {
             log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
                 " DECLARE: Failed to write variable '" + var + "' to memory at virtual address " + std::to_string(virtualAddr));
@@ -344,6 +337,7 @@ void Process::execute_declare(const std::string& args) {
             " DECLARE: Invalid value in '" + args + "'");
     }
 }
+
 
 
 void Process::execute_add(const std::string& args) {
@@ -679,11 +673,18 @@ std::string Process::get_current_timestamp() const {
 }
 
 //FOR SIMULATION OF VIRTUAL MEMORY ACCESS IN INSTRUCTION EXECUTION
+// Get virtual address for a variable within the symbol table segment (64 bytes, 32 vars max)
 size_t Process::getVirtualAddressForVar(const std::string& varName) const {
+    static constexpr size_t symbolTableBase = 0;  // Adjust if symbol table starts elsewhere
+    static constexpr size_t maxVars = 32;
+    static constexpr size_t varSize = 2;  // 2 bytes per variable (uint16)
+
     std::hash<std::string> hasher;
-    size_t m = (memorySize == 0) ? 1 : memorySize;
-    return hasher(varName) % m;
+    size_t varIndex = hasher(varName) % maxVars;
+    size_t virtualAddress = symbolTableBase + (varIndex * varSize);
+    return virtualAddress;
 }
+
 
 // Process.cpp
 
