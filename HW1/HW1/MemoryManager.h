@@ -20,6 +20,7 @@ private:
         bool   occupied = false;
         int    processId = -1;
         size_t pageNum = 0;   // optional (not required for correctness)
+		char* data = nullptr; // pointer to the actual data in this frame (allocated on demand)
     };
 
     std::vector<MemoryFrame> memory;
@@ -83,4 +84,14 @@ public:
 
     // convenience for cleanup on process exit (optional)
     void freeAllFramesForPid(int pid);
+
+    // read/write memory
+    bool writeUInt16(int pid, uint32_t address, uint16_t value);
+    bool readUInt16(int pid, uint32_t address, uint16_t& outValue);
+
+    bool readByte(int pid, size_t virtualAddress, char& outByte);
+    bool writeByte(int pid, size_t virtualAddress, char inByte);
+
+    bool translate(int pid, size_t virtualAddress, size_t& physicalAddress);
+
 };

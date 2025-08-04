@@ -32,6 +32,7 @@ void RRScheduler::stop() {
 
 void RRScheduler::add_process(Process* p) {
 	std::lock_guard<std::mutex> lock(queueMutex);
+    p->setStatus(ProcessStatus::Ready);
 	readyQueue.push(p);
 	cv.notify_one();
 }
@@ -71,6 +72,8 @@ void RRScheduler::worker_loop(int coreId)
             continue;
         
         if (!process->hasResidentPage() && memoryManager->getFreeFrames() == 0) {
+            process->setStatus(ProcessStatus::Waiting);
+            process->setCurrentCore(-1);
             add_process(process);                   // push back to the queue
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;                               // try another PCB
@@ -88,6 +91,7 @@ void RRScheduler::worker_loop(int coreId)
 
         markCoreRunning(coreId, process->getPID());
         process->setCurrentCore(coreId);
+		process->setStatus(ProcessStatus::Running);
 
         for (int i = 0; i < timeQuantum && !process->isFinished(); ++i) {
             process->execute_instruction(process->getCurrentInstruction(), coreId);
@@ -121,6 +125,8 @@ void RRScheduler::worker_loop(int coreId)
                 memoryManager->deallocateFrames(frames, start, {});*/
         }
         else {
+            process->setCurrentCore(-1);
+            process->setStatus(ProcessStatus::Ready);
             add_process(process);       // round?robin back to tail
         }
         /*

@@ -97,9 +97,14 @@ void report_util() { // report-util logic
 	else {
 		std::vector<Process*> running, finished;
 
-		for (auto proc : allProcesses) {
-			if (proc->isFinished()) finished.push_back(proc);
-			else running.push_back(proc);
+		for (auto* p : allProcesses) {
+			if (!p) continue;
+
+			auto status = p->getStatus();
+			if (status == ProcessStatus::Running)
+				running.push_back(p);
+			else if (status == ProcessStatus::Finished)
+				finished.push_back(p);
 		}
 
 		auto [used, available, util] = scheduler->getCPUUtilization();
@@ -185,13 +190,13 @@ void process_smi() {
 			<< std::setw(W_NAME) << p->getName()
 			<< std::setw(W_MEM) << p->getMemoryUsage()
 			<< std::setw(W_PGIN) << p->getPageIns()
-			<< std::setw(W_PGOUT) << p->getPageOuts();
-
-		//check if finished or running, otherwise, label it sleeping
-		std::string state =
-			p->isFinished() ? "Finished" :
-			(runningPids.count(p->getPID()) ? "Running" : "Sleeping");
+			<< std::setw(W_PGOUT) << p->getPageOuts()
+			<< std::setw(W_STAT) << p->getStatusString() << "\n";
+		/*
+		std::string state = p->isFinished() ? "Finished"
+			: (p->isSleeping() ? "Sleeping" : "Running");
 		std::cout << std::setw(W_STAT) << state << "\n";
+		*/
 	}
 
 	std::cout << "\n\033[32m"
@@ -450,19 +455,32 @@ std::vector<std::string> generate_instructions() {
 
 	//TODO: EDIT Instructions for more variety
 	static const std::string templates[] = {
-			"DECLARE(var_x, 100)",
-			"DECLARE(var_y, 50)",
-			"ADD(var_x, var_x, var_y)",
-			"SUBTRACT(var_x, var_y, var_x)",
-			"SLEEP(300)",
-			"SLEEP(2000)",
-			"FOR([PRINT(\"Looping inside process\")], 2)",
-			"FOR([ADD(var_x, var_x, 1)], 2)",
-			"FOR([SUBTRACT(var_x, var_y, 1)], 2)",
-			"PRINT(\"Hello world from process\")",
-			"PRINT(\"We love CSOPESY <3\")",
-			"PRINT(\"Value from: \" +var_x)"
+		"DECLARE(var_x, 100)",
+		"DECLARE(var_y, 50)",
+		"ADD(var_x, var_x, var_y)",
+		"SUBTRACT(var_x, var_y, var_x)",
+		"SLEEP(300)",
+		"SLEEP(2000)",
+		"FOR([PRINT(\"Looping inside process\")], 2)",
+		"FOR([ADD(var_x, var_x, 1)], 10)",
+		"FOR([SUBTRACT(var_x, var_x, 1)], 10)",
+		"PRINT(\"Hello world from process\")",
+		"PRINT(\"We love CSOPESY <3\")",
+		"PRINT(\"Value from: \" +var_x)",
+		//"WRITE(0x50, 200)",
+		//"READ(var_y, 0x50)",
+		//"DECLARE(var_big, 70000)",
+		//"READ(var_big, 0x100)",
+		//"WRITE(0xFFFFF, 123)",      // Out of range memory address
+		//"WRITE(0x10, -5)",          // Negative value invalid
+		//"WRITE(0x10, 70000)",       // Value too large
+		//"WRITE(hello, 100)",        // Invalid address format
+		//"READ(var_bad, 0xFFFFF)",   // Out of range address
+		//"READ(var_bad2, hello)",    // Invalid address format
+		//"READ(var_uninit, 0x2000)",  // Read uninitialized memory (should return 0)
+
 	};
+
 
 	std::random_device rd;
 	std::mt19937 gen(rd());

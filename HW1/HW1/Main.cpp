@@ -74,16 +74,22 @@ bool screen_command(const std::string& command) {
 		
 		//finished and running processes
 		for (auto* p : allProcesses) {
-			(p->isFinished() ? finished : running).push_back(p);
+			if (!p) continue;
+
+			auto status = p->getStatus();
+			if (status == ProcessStatus::Running)
+				running.push_back(p);
+			else if (status == ProcessStatus::Finished)
+				finished.push_back(p);
 		}
 
 		auto [used, available, util] = scheduler->getCPUUtilization();
 		std::cout << "CPU utilization: " << util << "%\n";
 		std::cout << "Cores used: " << used << "\n";
-		std::cout << "Cores available: " << available << "\n";
+		std::cout << "Cores available: " << available << "\n\n";
 
 
-		std::cout << "RUNNING PROCESSES: \n";
+		std::cout << "\033[35mRUNNING PROCESSES:\033[0m\n";
 		if (running.empty()) {
 			std::cout << "No running processes. \n";
 		} else {
@@ -91,7 +97,7 @@ bool screen_command(const std::string& command) {
 				<< std::left << std::setw(10) << "PID"
 				<< std::setw(10) << "Core"
 				<< std::setw(15) << "Progress"
-				<< "Creation Time\n" << std::string(60, '-') << "\n";
+				<< "Creation Time\n" << std::string(90, '-') << "\n";
 
 			for (auto* p : running) {
 				std::cout << std::left << std::setw(20) << p->getName()
@@ -102,14 +108,14 @@ bool screen_command(const std::string& command) {
 			}
 		}
 		
-		std::cout << "\nFINISHED PROCESSES: \n";
+		std::cout << "\033[35m\nFINISHED PROCESSES:\033[0m\n";
 		if (finished.empty()) {
 			std::cout << "No finished processes.\n";
 		}
 		else {
 			std::cout << std::left << std::setw(20) << "Name"
 				<< std::setw(25) << "Creation Time"
-				<< "Completion Time\n" << std::string(60, '-') << "\n";
+				<< "Completion Time\n" << std::string(90, '-') << "\n";
 
 			for (auto p : finished) {
 				std::cout << std::left << std::setw(20) << p->getName()
@@ -189,6 +195,12 @@ bool screen_command(const std::string& command) {
 	if (flag == "-r") {
 		if (!processManager.exists(name) || !consoleManager.has_screen(name)){
 			std::cout << "Process '" << name << "' does not exist. Use screen -s " << name << "' to create it.\n";
+			return false;
+		}
+
+		//if the process encountered a memory access violation
+		if(processManager.get_process(name)->getStatus() == ProcessStatus::Terminated) {
+			std::cout << "\033[31mProcess '" << name << "' encountered a memory access violation.\033[0m\n";
 			return false;
 		}
 

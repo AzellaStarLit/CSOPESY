@@ -50,7 +50,7 @@ Process::Process(const std::string& name)
 Process::Process(const std::string& name, size_t memorySize, size_t frameSize, MemoryManager* memoryManager)
     : name(name), instructionPointer(0), totalLines(0), memorySize(memorySize),
     creationTimestamp(get_current_timestamp()), processId(global_pid_counter++),
-    frameSize(frameSize), memoryManager(memoryManager) {
+    frameSize(frameSize), memoryManager(memoryManager), status(ProcessStatus::New) {
 
     //std::cout << "Process created with name: " << name << " and memory size: " << memorySize << std::endl;
     //initializeBackingStore();
@@ -90,45 +90,146 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
     std::string argument = instruction.substr(parenStart + 1, parenEnd - parenStart - 1);
 
   
-    if (command == "PRINT") {
+    if (command == "PRINT") { 
         execute_print(argument, coreId);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
     }
-    else if (command == "SLEEP") {
+    else if (command == "SLEEP") { 
         execute_sleep(argument);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
     }
-    else if (command == "DECLARE") {
+    else if (command == "DECLARE") { 
         execute_declare(argument);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
     }
-    else if (command == "ADD") {
-        execute_add(argument);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
+    else if (command == "ADD") { 
+        execute_add(argument);  
     }
-    else if (command == "SUBTRACT") {
+    else if (command == "SUBTRACT") { 
         execute_subtract(argument);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
     }
-    else if (command == "SLEEP") {
-        execute_sleep(argument);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
+    else if (command == "SLEEP") { 
+        execute_sleep(argument); 
     }
-    else if (command == "FOR") {
+    else if (command == "FOR") { 
         execute_for(argument, coreId, 1);
-        instructionPointer++;
-        if (instructionPointer >= totalLines) markFinished();
+    }
+    else if (command == "READ") {
+        execute_read(argument);
+    }
+    else if (command == "WRITE") {
+        execute_write(argument);
     }
     else {
         std::cout << "Unknown command: " << command << std::endl;
     }
+
+	instructionPointer++; // Increment instruction pointer after execution
+    if (instructionPointer >= totalLines) {
+        markFinished(); // Mark process as finished if all instructions are executed
+    }
 }
+
+// this is the execution logic for the READ command
+void Process::execute_read(const std::string& args) {
+    std::string timestamp = get_current_timestamp();
+
+    size_t comma = args.find(',');
+    if (comma == std::string::npos) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " READ: Invalid argument format: " + args);
+        return;
+    }
+
+    std::string var = args.substr(0, comma);
+    std::string addrStr = args.substr(comma + 1);
+
+    // Trim whitespace
+    var.erase(0, var.find_first_not_of(" \t"));
+    var.erase(var.find_last_not_of(" \t") + 1);
+    addrStr.erase(0, addrStr.find_first_not_of(" \t"));
+    addrStr.erase(addrStr.find_last_not_of(" \t") + 1);
+
+    size_t address = 0;
+    try {
+        // Parse hex address (e.g. "0x1000")
+        address = std::stoul(addrStr, nullptr, 16);
+    }
+    catch (...) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " READ: Invalid hex address format: " + addrStr);
+        return;
+    }
+
+    uint16_t value = 0;
+    bool success = memoryManager->readUInt16(processId, static_cast<uint32_t>(address), value);
+
+    if (success) {
+        symbolTable[var] = value;
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " READ: " + var + " = " + std::to_string(value) + " from address " + addrStr);
+    }
+    else {
+        symbolTable[var] = 0;  // Default to 0 if failed
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " READ FAILED: Could not read from memory[" + addrStr + "]");
+        markFinished();
+        setCompletionTimestamp();
+		status = ProcessStatus::Terminated; // Set status to Terminated on failure
+    }
+}
+
+// this is the execution logic for the WRITE command
+void Process::execute_write(const std::string& args) {
+    std::string timestamp = get_current_timestamp();
+
+    size_t comma = args.find(',');
+    if (comma == std::string::npos) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE: Invalid argument format: " + args);
+        return;
+    }
+
+    std::string addrStr = args.substr(0, comma);
+    std::string valueStr = args.substr(comma + 1);
+
+    // Trim whitespace
+    addrStr.erase(0, addrStr.find_first_not_of(" \t"));
+    addrStr.erase(addrStr.find_last_not_of(" \t") + 1);
+    valueStr.erase(0, valueStr.find_first_not_of(" \t"));
+    valueStr.erase(valueStr.find_last_not_of(" \t") + 1);
+
+    size_t address = 0;
+    int value = 0;
+    try {
+        // Parse hex address
+        address = std::stoul(addrStr, nullptr, 16);
+        value = std::stoi(valueStr);
+    }
+    catch (...) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE: Invalid hex address or value format: " + args);
+        return;
+    }
+
+    if (value < 0 || value > 65535) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE: Value out of range (0-65535): " + std::to_string(value));
+        return;
+    }
+
+    bool success = memoryManager->writeUInt16(processId, static_cast<uint32_t>(address), static_cast<uint16_t>(value));
+
+    if (success) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE: memory[" + addrStr + "] = " + std::to_string(value));
+    }
+    else {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE FAILED: Could not write to memory[" + addrStr + "]");
+        markFinished();
+        setCompletionTimestamp();
+        status = ProcessStatus::Terminated; // Set status to Terminated on failure
+    }
+}
+
 
 //this is the execution logic of the PRINT command
 void Process::execute_print(const std::string& msg, int coreId) {
@@ -182,34 +283,68 @@ void Process::execute_declare(const std::string& args) {
     size_t comma = args.find(',');
     std::string timestamp = get_current_timestamp();
 
-    size_t virtualAddr = getVirtualAddressForVar(args);
-    size_t pageNum = virtualAddr / frameSize;
-
-    if (!pageTable[pageNum].valid) {
-        memoryManager->handlePageFault(this, pageNum); 
-    }
-
     if (comma == std::string::npos) {
-        //std::cerr << "Invalid DECLARE format: " << args << "\n";
-        log.push_back("[" + timestamp + "] Core "+ std::to_string(getCurrentCore()) + "DECLARE: Invalid format: " + args);
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " DECLARE: Invalid format: " + args);
         return;
     }
 
     std::string var = args.substr(0, comma);
     std::string valStr = args.substr(comma + 1);
-    
+
+    // Trim whitespace on both var and valStr
+    auto trim = [](std::string& s) {
+        s.erase(0, s.find_first_not_of(" \t"));
+        s.erase(s.find_last_not_of(" \t") + 1);
+        };
+
+    trim(var);
+    trim(valStr);
+
+    // Enforce symbol table size limit (max 32 vars)
+    if (symbolTable.size() >= 32) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " DECLARE: Symbol table full, cannot declare '" + var + "'");
+        return;
+    }
+
+    // Get virtual address for the variable (pass var only!)
+    size_t virtualAddr = getVirtualAddressForVar(var);
+    size_t pageNum = virtualAddr / frameSize;
+
+    if (!pageTable[pageNum].valid) {
+        if (!memoryManager->handlePageFault(this, pageNum)) {
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " DECLARE: Failed to handle page fault for " + var);
+            return;
+        }
+    }
+
     try {
         uint32_t value = std::stoul(valStr);
-        if (value > 65535) value = 65535; 
+        if (value > 65535) value = 65535;
+        uint16_t val16 = static_cast<uint16_t>(value);
 
+        // Store in symbol table
+        symbolTable[var] = val16;
         touchForWriteVar(var);
-        symbolTable[var] = static_cast<uint16_t>(value);
-        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " DECLARE: " + var + " = " + std::to_string(value));
-    } catch (...) {
-        //std::cerr << "Invalid value in DECLARE: " << args << "\n";
-        log.push_back("[" + timestamp + "] Core "+ std::to_string(getCurrentCore()) + " DECLARE: Invalid value in '" + args + "'");
+        // Write uint16 value into memory at virtualAddr (2 bytes)
+        bool writeSuccess = memoryManager->writeUInt16(processId, static_cast<uint32_t>(virtualAddr), val16);
+        if (!writeSuccess) {
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " DECLARE: Failed to write variable '" + var + "' to memory at virtual address " + std::to_string(virtualAddr));
+            return;
+        }
+
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " DECLARE: " + var + " = " + std::to_string(val16));
+    }
+    catch (...) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " DECLARE: Invalid value in '" + args + "'");
     }
 }
+
 
 void Process::execute_add(const std::string& args) {
     std::string timestamp = get_current_timestamp();
@@ -522,6 +657,7 @@ void Process::markFinished() {
     if (!finished) {
         finished = true;
         setCompletionTimestamp();
+		status = ProcessStatus::Finished;
     }
 }
 
@@ -544,10 +680,30 @@ std::string Process::get_current_timestamp() const {
 
 //FOR SIMULATION OF VIRTUAL MEMORY ACCESS IN INSTRUCTION EXECUTION
 size_t Process::getVirtualAddressForVar(const std::string& varName) const {
-    // For simplicity: hash the varName to simulate an address
     std::hash<std::string> hasher;
-    //return hasher(varName) % memorySize;
-
     size_t m = (memorySize == 0) ? 1 : memorySize;
     return hasher(varName) % m;
+}
+
+// Process.cpp
+
+ProcessStatus Process::getStatus() const {
+    return status;
+}
+
+void Process::setStatus(ProcessStatus newStatus) {
+    status = newStatus;
+}
+
+std::string Process::getStatusString() const {
+    switch (status) {
+        case ProcessStatus::New:        return "New";
+        case ProcessStatus::Running:    return "Running";
+        case ProcessStatus::Sleeping:   return "Sleeping";
+        case ProcessStatus::Waiting:    return "Waiting";
+        case ProcessStatus::Ready:      return "Ready";
+        case ProcessStatus::Finished:   return "Finished";
+        case ProcessStatus::Terminated: return "Terminated";
+        default:                         return "Unknown";
+    }
 }
