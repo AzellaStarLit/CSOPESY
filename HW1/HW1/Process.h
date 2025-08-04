@@ -45,6 +45,8 @@ private:
     size_t pageIns = 0;
     size_t pageOuts = 0;
 
+    void ensureResidentVar(const std::string& varName);
+    void touchForWriteVar(const std::string& varName);
    
 public:
 

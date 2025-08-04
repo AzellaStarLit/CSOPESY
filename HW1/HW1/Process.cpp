@@ -178,6 +178,7 @@ void Process::execute_print(const std::string& msg, int coreId) {
 }
 
 void Process::execute_declare(const std::string& args) {
+
     size_t comma = args.find(',');
     std::string timestamp = get_current_timestamp();
 
@@ -200,6 +201,8 @@ void Process::execute_declare(const std::string& args) {
     try {
         uint32_t value = std::stoul(valStr);
         if (value > 65535) value = 65535; 
+
+        touchForWriteVar(var);
         symbolTable[var] = static_cast<uint16_t>(value);
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " DECLARE: " + var + " = " + std::to_string(value));
     } catch (...) {
@@ -240,9 +243,13 @@ void Process::execute_add(const std::string& args) {
         }
     };
 
+    ensureResidentVar(var2);
+    ensureResidentVar(var3);
+
     uint32_t result = static_cast<uint32_t>(getValue(var2)) + static_cast<uint32_t>(getValue(var3));
     if (result > 65535) result = 65535;
 
+    touchForWriteVar(var1);
     symbolTable[var1] = static_cast<uint16_t>(result);
     log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " ADD: " + var1 + " = " + std::to_string(symbolTable[var1]));
 }
@@ -279,9 +286,13 @@ void Process::execute_subtract(const std::string& args) {
         }
     };
 
+    ensureResidentVar(var2);
+    ensureResidentVar(var3);
+
     int result = static_cast<int>(getValue(var2)) - static_cast<int>(getValue(var3));
     if (result < 0) result = 0;
 
+    touchForWriteVar(var1);
     symbolTable[var1] = static_cast<uint16_t>(result);
     log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) + " SUBTRACT: " + var1 + " = " + std::to_string(symbolTable[var1]));
 }
@@ -432,6 +443,28 @@ Process::PageTableEntry& Process::getPageEntry(size_t pageNum) {
     return pageTable[pageNum];
 }
 
+void Process::ensureResidentVar(const std::string& varName) {
+    if (!memoryManager || frameSize == 0 || memorySize == 0) return;
+    size_t vaddr = getVirtualAddressForVar(varName);
+    size_t pageNum = vaddr / frameSize;
+
+    auto& e = getPageEntry(pageNum);
+    if (!e.valid) {
+        memoryManager->handlePageFault(this, pageNum); // will bump page-ins
+    }
+}
+
+void Process::touchForWriteVar(const std::string& varName) {
+    if (!memoryManager || frameSize == 0 || memorySize == 0) return;
+    size_t vaddr = getVirtualAddressForVar(varName);
+    size_t pageNum = vaddr / frameSize;
+
+    auto& e = getPageEntry(pageNum);
+    if (!e.valid) {
+        memoryManager->handlePageFault(this, pageNum); // may bump page-ins
+    }
+    e.dirty = true; 
+}
 
 //------------------DEBUG------------------//
 //for logging only
@@ -513,5 +546,8 @@ std::string Process::get_current_timestamp() const {
 size_t Process::getVirtualAddressForVar(const std::string& varName) const {
     // For simplicity: hash the varName to simulate an address
     std::hash<std::string> hasher;
-    return hasher(varName) % memorySize;
+    //return hasher(varName) % memorySize;
+
+    size_t m = (memorySize == 0) ? 1 : memorySize;
+    return hasher(varName) % m;
 }
