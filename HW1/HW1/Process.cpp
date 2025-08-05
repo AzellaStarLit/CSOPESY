@@ -183,7 +183,7 @@ void Process::execute_write(const std::string& args) {
     size_t comma = args.find(',');
     if (comma == std::string::npos) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " WRITE: Invalid argument format: " + args);
+            " WRITE: Invalid argument format. Expected: <hex_address>, <value>. Got: " + args);
         return;
     }
 
@@ -197,25 +197,40 @@ void Process::execute_write(const std::string& args) {
     valueStr.erase(valueStr.find_last_not_of(" \t") + 1);
 
     size_t address = 0;
-    int value = 0;
+    uint16_t value = 0;
+
     try {
-        // Parse hex address
-        address = std::stoul(addrStr, nullptr, 16);
-        value = std::stoi(valueStr);
+        address = std::stoul(addrStr, nullptr, 16);  // Parse as hex
     }
     catch (...) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " WRITE: Invalid hex address or value format: " + args);
+            " WRITE: Invalid address format. Must be hexadecimal.");
         return;
     }
 
-    if (value < 0 || value > 65535) {
+    // Try parsing as direct integer first
+    try {
+        value = static_cast<uint16_t>(std::stoi(valueStr));
+    }
+    catch (...) {
+        // If not an int, check if it’s a known variable
+        if (symbolTable.find(valueStr) != symbolTable.end()) {
+            value = static_cast<uint16_t>(symbolTable[valueStr]);
+        }
+        else {
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " WRITE: Invalid value. Not a valid integer or known variable: " + valueStr);
+            return;
+        }
+    }
+
+    if (value > 65535) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " WRITE: Value out of range (0-65535): " + std::to_string(value));
         return;
     }
 
-    bool success = memoryManager->writeUInt16(processId, static_cast<uint32_t>(address), static_cast<uint16_t>(value));
+    bool success = memoryManager->writeUInt16(processId, static_cast<uint32_t>(address), value);
 
     if (success) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
@@ -226,7 +241,7 @@ void Process::execute_write(const std::string& args) {
             " WRITE FAILED: Could not write to memory[" + addrStr + "]");
         markFinished();
         setCompletionTimestamp();
-        status = ProcessStatus::Terminated; // Set status to Terminated on failure
+        status = ProcessStatus::Terminated;
     }
 }
 

@@ -448,7 +448,8 @@ bool isPowerOfTwo(int n) {
 	return (n & (n - 1)) == 0;
 }
 
-//TODO: Instructions may need to take space in memory
+//Instructions may need to take space in memory
+/*
 std::vector<std::string> generate_instructions() {
 	uint32_t minInstructions = configManager.getMinInstructions();
 	uint32_t maxInstructions = configManager.getMaxInstructions();
@@ -467,6 +468,10 @@ std::vector<std::string> generate_instructions() {
 		"PRINT(\"Hello world from process\")",
 		"PRINT(\"We love CSOPESY <3\")",
 		"PRINT(\"Value from: \" +var_x)",
+		"DECLARE(var_a, 100)",
+		"DECLARE(var_b, 70000)", // should clamp to 65535
+		"DECLARE(var_c, 0)",
+		"DECLARE(var_d, 65535)",
 		//"WRITE(0x50, 200)",
 		//"READ(var_y, 0x50)",
 		//"DECLARE(var_big, 70000)",
@@ -495,6 +500,87 @@ std::vector<std::string> generate_instructions() {
 		std::string instr = templates[templateIndexDist(gen)];
 		instructions.push_back(instr);
 	}
+
+	return instructions;
+}
+*/
+
+std::vector<std::string> generate_instructions() {
+	uint32_t minInstructions = configManager.getMinInstructions();
+	uint32_t maxInstructions = configManager.getMaxInstructions();
+
+	std::vector<std::string> instructions;
+
+	// Set to keep track of used memory addresses for WRITE/READ to avoid collisions
+	std::unordered_set<uint32_t> usedAddresses;
+
+	// Variables available for use
+	std::vector<std::string> variablePool = {
+		"var_a", "var_b", "var_c", "var_d", "var_x", "var_y"
+	};
+
+	// Declare some default variable declarations
+	std::vector<std::string> baseTemplates = {
+		"DECLARE(var_x, 100)",
+		"DECLARE(var_y, 50)",
+		"ADD(var_x, var_x, var_y)",
+		"SUBTRACT(var_x, var_y, var_x)",
+		"SLEEP(300)",
+		"SLEEP(2000)",
+		"FOR([PRINT(\"Looping inside process\")], 2)",
+		"FOR([ADD(var_x, var_x, 1)], 10)",
+		"FOR([SUBTRACT(var_x, var_x, 1)], 10)",
+		"PRINT(\"Hello world from process\")",
+		"PRINT(\"We love CSOPESY <3\")",
+		"PRINT(\"Value from: \" +var_x)",
+		"DECLARE(var_a, 100)",
+		"DECLARE(var_b, 70000)", // should clamp
+		"DECLARE(var_c, 0)",
+		"DECLARE(var_d, 65535)"
+	};
+
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> countDist(minInstructions, maxInstructions);
+	std::uniform_int_distribution<> baseDist(0, baseTemplates.size() - 1);
+	std::uniform_int_distribution<> varDist(0, variablePool.size() - 1);
+	std::uniform_int_distribution<> valueDist(0, 70000); // may exceed uint16 to test clamping
+	std::uniform_int_distribution<> addrDist(0x1000, 0x2000); // simulate safe address range
+
+	int totalInstructions = countDist(gen);
+
+	for (int i = 0; i < totalInstructions; ++i) {
+		int choice = rand() % 5; // Randomly inject READ/WRITE sometimes
+		if (choice == 0 && !variablePool.empty()) {
+			// WRITE(addr, value)
+			uint32_t addr;
+			do {
+				addr = addrDist(gen);
+			} while (usedAddresses.count(addr)); // Avoid reused addresses
+
+			usedAddresses.insert(addr);
+			int value = valueDist(gen);
+			std::stringstream ss;
+			ss << "WRITE(0x" << std::hex << addr << ", " << value << ")";
+			instructions.push_back(ss.str());
+		}
+		else if (choice == 1 && !usedAddresses.empty()) {
+			// READ(var, addr)
+			auto it = usedAddresses.begin();
+			std::advance(it, rand() % usedAddresses.size());
+
+			std::string var = variablePool[varDist(gen)];
+			std::stringstream ss;
+			ss << "READ(" << var << ", 0x" << std::hex << *it << ")";
+			instructions.push_back(ss.str());
+		}
+		else {
+			// Base instruction
+			std::string base = baseTemplates[baseDist(gen)];
+			instructions.push_back(base);
+		}
+	}
+
 	return instructions;
 }
 
