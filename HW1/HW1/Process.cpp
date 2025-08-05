@@ -149,8 +149,7 @@ void Process::execute_read(const std::string& args) {
 
     size_t address = 0;
     try {
-        // Parse hex address (e.g. "0x1000")
-        address = std::stoul(addrStr, nullptr, 16);
+        address = std::stoul(addrStr, nullptr, 16); // Parse hex
     }
     catch (...) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
@@ -161,20 +160,28 @@ void Process::execute_read(const std::string& args) {
     uint16_t value = 0;
     bool success = memoryManager->readUInt16(processId, static_cast<uint32_t>(address), value);
 
+    if (memoryManager->wasPageFault()) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " PAGE FAULT: Suspended READ from " + addrStr + " — will retry next cycle.");
+        status = ProcessStatus::Waiting;  // New custom state
+        return; // Exit early so we can retry later
+    }
+
     if (success) {
         symbolTable[var] = value;
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " READ: " + var + " = " + std::to_string(value) + " from address " + addrStr);
     }
     else {
-        symbolTable[var] = 0;  // Default to 0 if failed
+        symbolTable[var] = 0;
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " READ FAILED: Could not read from memory[" + addrStr + "]");
         markFinished();
         setCompletionTimestamp();
-		status = ProcessStatus::Terminated; // Set status to Terminated on failure
+        status = ProcessStatus::Terminated;
     }
 }
+
 
 // this is the execution logic for the WRITE command
 void Process::execute_write(const std::string& args) {
@@ -200,7 +207,7 @@ void Process::execute_write(const std::string& args) {
     uint16_t value = 0;
 
     try {
-        address = std::stoul(addrStr, nullptr, 16);  // Parse as hex
+        address = std::stoul(addrStr, nullptr, 16); // hex address
     }
     catch (...) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
@@ -208,12 +215,10 @@ void Process::execute_write(const std::string& args) {
         return;
     }
 
-    // Try parsing as direct integer first
     try {
         value = static_cast<uint16_t>(std::stoi(valueStr));
     }
     catch (...) {
-        // If not an int, check if it’s a known variable
         if (symbolTable.find(valueStr) != symbolTable.end()) {
             value = static_cast<uint16_t>(symbolTable[valueStr]);
         }
@@ -232,6 +237,14 @@ void Process::execute_write(const std::string& args) {
 
     bool success = memoryManager->writeUInt16(processId, static_cast<uint32_t>(address), value);
 
+    if (memoryManager->wasPageFault()) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " PAGE FAULT: Suspended WRITE to " + addrStr + " will retry next cycle.");
+        status = ProcessStatus::Waiting; 
+        instructionPointer--;
+        return;
+    }
+
     if (success) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " WRITE: memory[" + addrStr + "] = " + std::to_string(value));
@@ -244,6 +257,7 @@ void Process::execute_write(const std::string& args) {
         status = ProcessStatus::Terminated;
     }
 }
+
 
 
 //this is the execution logic of the PRINT command
