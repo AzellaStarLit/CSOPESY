@@ -13,7 +13,7 @@ bool ConfigManager::loadFromFile(const std::string& filename) {
     }
 
     auto isPowerOfTwoInRange = [](unsigned long v) {
-        return v >= 64 && v <= 65536 && (v & (v - 1)) == 0;
+        return v >= 2 && v <= 65536 && (v & (v - 1)) == 0;
         };
 
     std::unordered_map<std::string, std::function<void(const std::string&)>> setters = {
