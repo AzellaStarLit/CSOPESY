@@ -162,8 +162,9 @@ void Process::execute_read(const std::string& args) {
 
     if (memoryManager->wasPageFault()) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " PAGE FAULT: Suspended READ from " + addrStr + " — will retry next cycle.");
+            " PAGE FAULT: Suspended READ from " + addrStr + " will retry next cycle.");
         status = ProcessStatus::Waiting;  // New custom state
+		instructionPointer--; // Decrement instruction pointer to retry
         return; // Exit early so we can retry later
     }
 

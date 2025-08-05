@@ -449,7 +449,7 @@ bool isPowerOfTwo(int n) {
 }
 
 //Instructions may need to take space in memory
-/*
+
 std::vector<std::string> generate_instructions() {
 	uint32_t minInstructions = configManager.getMinInstructions();
 	uint32_t maxInstructions = configManager.getMaxInstructions();
@@ -472,10 +472,10 @@ std::vector<std::string> generate_instructions() {
 		"DECLARE(var_b, 70000)", // should clamp to 65535
 		"DECLARE(var_c, 0)",
 		"DECLARE(var_d, 65535)",
-		//"WRITE(0x50, 200)",
-		//"READ(var_y, 0x50)",
-		//"DECLARE(var_big, 70000)",
-		//"READ(var_big, 0x100)",
+		"WRITE(0x50, 200)",
+		"READ(var_y, 0x50)",
+		"DECLARE(var_big, 70000)",
+		"READ(var_big, 0x07F)",
 		//"WRITE(0xFFFFF, 123)",      // Out of range memory address
 		//"WRITE(0x10, -5)",          // Negative value invalid
 		//"WRITE(0x10, 70000)",       // Value too large
@@ -503,8 +503,9 @@ std::vector<std::string> generate_instructions() {
 
 	return instructions;
 }
-*/
 
+
+/*
 std::vector<std::string> generate_instructions() {
 	uint32_t minInstructions = configManager.getMinInstructions();
 	uint32_t maxInstructions = configManager.getMaxInstructions();
@@ -583,4 +584,4 @@ std::vector<std::string> generate_instructions() {
 
 	return instructions;
 }
-
+*/
