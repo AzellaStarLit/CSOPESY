@@ -294,6 +294,7 @@ void Process::execute_write(const std::string& args) {
 
         if (!entry.valid) {
             memoryManager->handlePageFault(this, pageNum);
+			status = ProcessStatus::Waiting;
         }
 
         entry.dirty = true;

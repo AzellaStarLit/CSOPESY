@@ -6,7 +6,7 @@ ASTRERO, Dwight Daryl
 
 DE CASTRO, Phoenix Claire
 
-LABARRETE, Lance Desmond
+LABARRETE, Lance Desmond (WITHDRAWN)
 
 ## HOW TO RUN
 
@@ -41,6 +41,9 @@ Once you launch the program, you will land on the `Menu Screen`. You have to ent
 - `screen-ls` - lists running and finished processes.
 - `report-util` - generates a log file with the same process details shown in `screen -ls`.
 - `marquee` - switch to marquee console. `exit` to go back to the main menu.
+- `marquee` - switch to marquee console. `exit` to go back to the main menu.
+- `process-smi` - proves memory management visualization for each of the processes.
+- `vmstat` - shows stats related to memory management.
 - `exit` - use this from the main menu to shut down the emulator gracefully.
 
 ## Extra Notes
