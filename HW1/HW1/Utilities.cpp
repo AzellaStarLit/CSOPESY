@@ -397,20 +397,39 @@ void vmstat() {
 		for (int pid : pidsPerCore) if (pid != -1) runningSet.insert(pid);
 	}
 
-	size_t running = 0, sleeping = 0, finished = 0;
-	running = runningSet.size();
+	size_t cntNew = 0, cntReady = 0, cntRunning = 0, cntSleeping = 0, cntWaiting = 0, cntFinished = 0, cntTerminated = 0, cntUnknown = 0;
+
+	//running = runningSet.size();
 
 	for (auto* p : all) {
 		if (!p) continue;
-		if (p->isFinished()) ++finished;
-		else if (runningSet.count(p->getPID())) { /* counted above */ }
-		else ++sleeping; // collapse: not running and not finished => "Sleeping"
+
+		ProcessStatus st = p->getStatus();
+		if (runningSet.count(p->getPID())) st = ProcessStatus::Running; // live truth
+
+		switch (st) {
+		case ProcessStatus::New:        ++cntNew;        break;
+		case ProcessStatus::Ready:      ++cntReady;      break;
+		case ProcessStatus::Running:    ++cntRunning;    break;
+		case ProcessStatus::Sleeping:   ++cntSleeping;   break;
+		case ProcessStatus::Waiting:    ++cntWaiting;    break;
+		case ProcessStatus::Finished:   ++cntFinished;   break;
+		case ProcessStatus::Terminated: ++cntTerminated; break;
+		default:                        ++cntUnknown;    break;
+		}
 	}
 
 	std::cout << "\n\033[32mProcesses:\033[0m\n"
-		<< "  Running : " << running << "\n"
-		<< "  Sleeping: " << sleeping << "\n"
-		<< "  Finished: " << finished << "\n\n";
+		<< "  New        : " << cntNew << "\n"
+		<< "  Ready      : " << cntReady << "\n"
+		<< "  Running    : " << cntRunning << "\n"
+		<< "  Sleeping   : " << cntSleeping << "\n"
+		<< "  Waiting    : " << cntWaiting << "\n"
+		<< "  Finished   : " << cntFinished << "\n"
+		<< "  Terminated : " << cntTerminated << "\n";
+
+	if (cntUnknown)
+		std::cout << "  Unknown    : " << cntUnknown << "\n";
 
 	std::cout << "\n\033[32mCPU Ticks:\033[0m\n"
 		<< "  Idle   : " << (scheduler ? scheduler->getIdleCpuTicks() : 0) << "\n"
