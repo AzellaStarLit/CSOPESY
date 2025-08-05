@@ -98,4 +98,5 @@ public:
     bool translate(int pid, size_t virtualAddress, size_t& physicalAddress);
 
     bool wasPageFault() const;
+    void resetPageFaultFlag();
 };

@@ -128,7 +128,10 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
 }
 
 // this is the execution logic for the READ command
+/*
 void Process::execute_read(const std::string& args) {
+
+	memoryManager->resetPageFaultFlag(); // Reset page fault flag at the start of READ
     std::string timestamp = get_current_timestamp();
 
     size_t comma = args.find(',');
@@ -164,7 +167,7 @@ void Process::execute_read(const std::string& args) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " PAGE FAULT: Suspended READ from " + addrStr + " will retry next cycle.");
         status = ProcessStatus::Waiting;  // New custom state
-		instructionPointer--; // Decrement instruction pointer to retry
+		//instructionPointer--; // Decrement instruction pointer to retry
         return; // Exit early so we can retry later
     }
 
@@ -174,6 +177,7 @@ void Process::execute_read(const std::string& args) {
             " READ: " + var + " = " + std::to_string(value) + " from address " + addrStr);
     }
     else {
+		// Not a recoverable error, trigger termination for memory access violation
         symbolTable[var] = 0;
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " READ FAILED: Could not read from memory[" + addrStr + "]");
@@ -182,10 +186,13 @@ void Process::execute_read(const std::string& args) {
         status = ProcessStatus::Terminated;
     }
 }
+*/
 
 
 // this is the execution logic for the WRITE command
+/*
 void Process::execute_write(const std::string& args) {
+    memoryManager->resetPageFaultFlag(); // Reset page fault flag at the start of READ
     std::string timestamp = get_current_timestamp();
 
     size_t comma = args.find(',');
@@ -236,15 +243,15 @@ void Process::execute_write(const std::string& args) {
         return;
     }
 
-    bool success = memoryManager->writeUInt16(processId, static_cast<uint32_t>(address), value);
-
     if (memoryManager->wasPageFault()) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " PAGE FAULT: Suspended WRITE to " + addrStr + " will retry next cycle.");
         status = ProcessStatus::Waiting; 
-        instructionPointer--;
+        //instructionPointer--;
         return;
     }
+
+    bool success = memoryManager->writeUInt16(processId, static_cast<uint32_t>(address), value);
 
     if (success) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
@@ -256,6 +263,121 @@ void Process::execute_write(const std::string& args) {
         markFinished();
         setCompletionTimestamp();
         status = ProcessStatus::Terminated;
+    }
+}
+*/
+
+void Process::execute_write(const std::string& args) {
+    std::string timestamp = get_current_timestamp();
+    std::stringstream ss(args);
+    std::string addr_str, val_str;
+
+    std::getline(ss, addr_str, ',');
+    std::getline(ss, val_str);
+
+    try {
+        // Parse address as hex (base 16)
+        size_t addr = std::stoul(addr_str, nullptr, 16);
+
+        // Parse value as decimal (you can change base if you want)
+        uint16_t value = static_cast<uint16_t>(std::stoul(val_str, nullptr, 10));
+
+        if (!memoryManager) {
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " WRITE: No memory manager assigned.");
+            return;
+        }
+
+        // Trigger memory manager to ensure page is present
+        size_t pageNum = addr / frameSize;
+        PageTableEntry& entry = getPageEntry(pageNum);
+
+        if (!entry.valid) {
+            memoryManager->handlePageFault(this, pageNum);
+        }
+
+        entry.dirty = true;
+
+        // Write to memory (simplified simulation)
+        bool writeSuccess = memoryManager->writeUInt16(processId, static_cast<uint32_t>(addr), value);
+
+        if (!writeSuccess) {
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " WRITE FAILED: Could not write value to address 0x" + addr_str);
+            markFinished();
+            setCompletionTimestamp();
+            status = ProcessStatus::Terminated;
+            return;
+        }
+
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE: Value " + std::to_string(value) + " written to address " + addr_str);
+
+    }
+    catch (const std::exception& e) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE: Invalid arguments: " + args);
+    }
+}
+
+void Process::execute_read(const std::string& args) {
+    std::string timestamp = get_current_timestamp();
+    std::stringstream ss(args);
+    std::string var, addr_str;
+
+    std::getline(ss, var, ',');
+    std::getline(ss, addr_str);
+
+    // Trim whitespace helper lambda
+    auto trim = [](std::string& s) {
+        s.erase(0, s.find_first_not_of(" \t"));
+        s.erase(s.find_last_not_of(" \t") + 1);
+        };
+    trim(var);
+    trim(addr_str);
+
+    try {
+        size_t addr = std::stoul(addr_str, nullptr, 16); // parse hex address
+
+        if (!memoryManager) {
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " READ: No memory manager assigned.");
+            return;
+        }
+
+        size_t pageNum = addr / frameSize;
+        PageTableEntry& entry = getPageEntry(pageNum);
+
+        if (!entry.valid) {
+            memoryManager->handlePageFault(this, pageNum);
+            // suspend process to retry next cycle
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " PAGE FAULT: Suspended READ from " + addr_str + " will retry next cycle.");
+            status = ProcessStatus::Waiting;
+            return;
+        }
+
+        uint16_t value = 0;
+        bool success = memoryManager->readUInt16(processId, static_cast<uint32_t>(addr), value);
+
+        if (success) {
+            symbolTable[var] = value;
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " READ: " + var + " = " + std::to_string(value) + " from address " + addr_str);
+        }
+        else {
+            // unrecoverable read error
+            symbolTable[var] = 0;
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " READ FAILED: Could not read from memory[" + addr_str + "]");
+            markFinished();
+            setCompletionTimestamp();
+            status = ProcessStatus::Terminated;
+        }
+    }
+    catch (...) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " READ: Invalid arguments: " + args);
     }
 }
 

@@ -374,7 +374,7 @@ bool MemoryManager::writeByte(int pid, size_t virtualAddress, char inByte) {
 
 
 bool MemoryManager::translate(int pid, size_t virtualAddress, size_t& physicalAddress) {
-    lastPageFaultOccurred = false;  // reset
+    //lastPageFaultOccurred = false;  // reset
 
     Process* proc = processManager.get_process_by_pid(pid);
     if (!proc) return false;
@@ -407,6 +407,10 @@ bool MemoryManager::translate(int pid, size_t virtualAddress, size_t& physicalAd
 
 bool MemoryManager::wasPageFault() const {
     return lastPageFaultOccurred;
+}
+
+void MemoryManager::resetPageFaultFlag() {
+    lastPageFaultOccurred = false; // reset the flag
 }
 
 // Already defined function — keep this
