@@ -128,7 +128,10 @@ void Process::execute_instruction(const std::string& instruction, int coreId) {
 }
 
 // this is the execution logic for the READ command
+/*
 void Process::execute_read(const std::string& args) {
+
+	memoryManager->resetPageFaultFlag(); // Reset page fault flag at the start of READ
     std::string timestamp = get_current_timestamp();
 
     size_t comma = args.find(',');
@@ -149,8 +152,7 @@ void Process::execute_read(const std::string& args) {
 
     size_t address = 0;
     try {
-        // Parse hex address (e.g. "0x1000")
-        address = std::stoul(addrStr, nullptr, 16);
+        address = std::stoul(addrStr, nullptr, 16); // Parse hex
     }
     catch (...) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
@@ -161,29 +163,42 @@ void Process::execute_read(const std::string& args) {
     uint16_t value = 0;
     bool success = memoryManager->readUInt16(processId, static_cast<uint32_t>(address), value);
 
+    if (memoryManager->wasPageFault()) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " PAGE FAULT: Suspended READ from " + addrStr + " will retry next cycle.");
+        status = ProcessStatus::Waiting;  // New custom state
+		//instructionPointer--; // Decrement instruction pointer to retry
+        return; // Exit early so we can retry later
+    }
+
     if (success) {
         symbolTable[var] = value;
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " READ: " + var + " = " + std::to_string(value) + " from address " + addrStr);
     }
     else {
-        symbolTable[var] = 0;  // Default to 0 if failed
+		// Not a recoverable error, trigger termination for memory access violation
+        symbolTable[var] = 0;
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " READ FAILED: Could not read from memory[" + addrStr + "]");
         markFinished();
         setCompletionTimestamp();
-		status = ProcessStatus::Terminated; // Set status to Terminated on failure
+        status = ProcessStatus::Terminated;
     }
 }
+*/
+
 
 // this is the execution logic for the WRITE command
+/*
 void Process::execute_write(const std::string& args) {
+    memoryManager->resetPageFaultFlag(); // Reset page fault flag at the start of READ
     std::string timestamp = get_current_timestamp();
 
     size_t comma = args.find(',');
     if (comma == std::string::npos) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " WRITE: Invalid argument format: " + args);
+            " WRITE: Invalid argument format. Expected: <hex_address>, <value>. Got: " + args);
         return;
     }
 
@@ -197,25 +212,46 @@ void Process::execute_write(const std::string& args) {
     valueStr.erase(valueStr.find_last_not_of(" \t") + 1);
 
     size_t address = 0;
-    int value = 0;
+    uint16_t value = 0;
+
     try {
-        // Parse hex address
-        address = std::stoul(addrStr, nullptr, 16);
-        value = std::stoi(valueStr);
+        address = std::stoul(addrStr, nullptr, 16); // hex address
     }
     catch (...) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-            " WRITE: Invalid hex address or value format: " + args);
+            " WRITE: Invalid address format. Must be hexadecimal.");
         return;
     }
 
-    if (value < 0 || value > 65535) {
+    try {
+        value = static_cast<uint16_t>(std::stoi(valueStr));
+    }
+    catch (...) {
+        if (symbolTable.find(valueStr) != symbolTable.end()) {
+            value = static_cast<uint16_t>(symbolTable[valueStr]);
+        }
+        else {
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " WRITE: Invalid value. Not a valid integer or known variable: " + valueStr);
+            return;
+        }
+    }
+
+    if (value > 65535) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " WRITE: Value out of range (0-65535): " + std::to_string(value));
         return;
     }
 
-    bool success = memoryManager->writeUInt16(processId, static_cast<uint32_t>(address), static_cast<uint16_t>(value));
+    if (memoryManager->wasPageFault()) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " PAGE FAULT: Suspended WRITE to " + addrStr + " will retry next cycle.");
+        status = ProcessStatus::Waiting; 
+        //instructionPointer--;
+        return;
+    }
+
+    bool success = memoryManager->writeUInt16(processId, static_cast<uint32_t>(address), value);
 
     if (success) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
@@ -226,9 +262,125 @@ void Process::execute_write(const std::string& args) {
             " WRITE FAILED: Could not write to memory[" + addrStr + "]");
         markFinished();
         setCompletionTimestamp();
-        status = ProcessStatus::Terminated; // Set status to Terminated on failure
+        status = ProcessStatus::Terminated;
     }
 }
+*/
+
+void Process::execute_write(const std::string& args) {
+    std::string timestamp = get_current_timestamp();
+    std::stringstream ss(args);
+    std::string addr_str, val_str;
+
+    std::getline(ss, addr_str, ',');
+    std::getline(ss, val_str);
+
+    try {
+        // Parse address as hex (base 16)
+        size_t addr = std::stoul(addr_str, nullptr, 16);
+
+        // Parse value as decimal (you can change base if you want)
+        uint16_t value = static_cast<uint16_t>(std::stoul(val_str, nullptr, 10));
+
+        if (!memoryManager) {
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " WRITE: No memory manager assigned.");
+            return;
+        }
+
+        // Trigger memory manager to ensure page is present
+        size_t pageNum = addr / frameSize;
+        PageTableEntry& entry = getPageEntry(pageNum);
+
+        if (!entry.valid) {
+            memoryManager->handlePageFault(this, pageNum);
+        }
+
+        entry.dirty = true;
+
+        // Write to memory (simplified simulation)
+        bool writeSuccess = memoryManager->writeUInt16(processId, static_cast<uint32_t>(addr), value);
+
+        if (!writeSuccess) {
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " WRITE FAILED: Could not write value to address 0x" + addr_str);
+            markFinished();
+            setCompletionTimestamp();
+            status = ProcessStatus::Terminated;
+            return;
+        }
+
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE: Value " + std::to_string(value) + " written to address " + addr_str);
+
+    }
+    catch (const std::exception& e) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " WRITE: Invalid arguments: " + args);
+    }
+}
+
+void Process::execute_read(const std::string& args) {
+    std::string timestamp = get_current_timestamp();
+    std::stringstream ss(args);
+    std::string var, addr_str;
+
+    std::getline(ss, var, ',');
+    std::getline(ss, addr_str);
+
+    // Trim whitespace helper lambda
+    auto trim = [](std::string& s) {
+        s.erase(0, s.find_first_not_of(" \t"));
+        s.erase(s.find_last_not_of(" \t") + 1);
+        };
+    trim(var);
+    trim(addr_str);
+
+    try {
+        size_t addr = std::stoul(addr_str, nullptr, 16); // parse hex address
+
+        if (!memoryManager) {
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " READ: No memory manager assigned.");
+            return;
+        }
+
+        size_t pageNum = addr / frameSize;
+        PageTableEntry& entry = getPageEntry(pageNum);
+
+        if (!entry.valid) {
+            memoryManager->handlePageFault(this, pageNum);
+            // suspend process to retry next cycle
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " PAGE FAULT: Suspended READ from " + addr_str + " will retry next cycle.");
+            status = ProcessStatus::Waiting;
+            return;
+        }
+
+        uint16_t value = 0;
+        bool success = memoryManager->readUInt16(processId, static_cast<uint32_t>(addr), value);
+
+        if (success) {
+            symbolTable[var] = value;
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " READ: " + var + " = " + std::to_string(value) + " from address " + addr_str);
+        }
+        else {
+            // unrecoverable read error
+            symbolTable[var] = 0;
+            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+                " READ FAILED: Could not read from memory[" + addr_str + "]");
+            markFinished();
+            setCompletionTimestamp();
+            status = ProcessStatus::Terminated;
+        }
+    }
+    catch (...) {
+        log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
+            " READ: Invalid arguments: " + args);
+    }
+}
+
 
 
 //this is the execution logic of the PRINT command
@@ -279,7 +431,6 @@ void Process::execute_print(const std::string& msg, int coreId) {
 }
 
 void Process::execute_declare(const std::string& args) {
-
     size_t comma = args.find(',');
     std::string timestamp = get_current_timestamp();
 
@@ -292,7 +443,7 @@ void Process::execute_declare(const std::string& args) {
     std::string var = args.substr(0, comma);
     std::string valStr = args.substr(comma + 1);
 
-    // Trim whitespace on both var and valStr
+    // Trim whitespace
     auto trim = [](std::string& s) {
         s.erase(0, s.find_first_not_of(" \t"));
         s.erase(s.find_last_not_of(" \t") + 1);
@@ -301,23 +452,10 @@ void Process::execute_declare(const std::string& args) {
     trim(var);
     trim(valStr);
 
-    // Enforce symbol table size limit (max 32 vars)
     if (symbolTable.size() >= 32) {
         log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
             " DECLARE: Symbol table full, cannot declare '" + var + "'");
         return;
-    }
-
-    // Get virtual address for the variable (pass var only!)
-    size_t virtualAddr = getVirtualAddressForVar(var);
-    size_t pageNum = virtualAddr / frameSize;
-
-    if (!pageTable[pageNum].valid) {
-        if (!memoryManager->handlePageFault(this, pageNum)) {
-            log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
-                " DECLARE: Failed to handle page fault for " + var);
-            return;
-        }
     }
 
     try {
@@ -325,11 +463,18 @@ void Process::execute_declare(const std::string& args) {
         if (value > 65535) value = 65535;
         uint16_t val16 = static_cast<uint16_t>(value);
 
-        // Store in symbol table
+        // Store in symbol table first
         symbolTable[var] = val16;
+
+        // Ensure page is resident and mark dirty (handle page faults here)
         touchForWriteVar(var);
-        // Write uint16 value into memory at virtualAddr (2 bytes)
+
+        // Get virtual address for the variable
+        size_t virtualAddr = getVirtualAddressForVar(var);
+
+        // Write value into memory at virtual address
         bool writeSuccess = memoryManager->writeUInt16(processId, static_cast<uint32_t>(virtualAddr), val16);
+
         if (!writeSuccess) {
             log.push_back("[" + timestamp + "] Core " + std::to_string(getCurrentCore()) +
                 " DECLARE: Failed to write variable '" + var + "' to memory at virtual address " + std::to_string(virtualAddr));
@@ -344,6 +489,7 @@ void Process::execute_declare(const std::string& args) {
             " DECLARE: Invalid value in '" + args + "'");
     }
 }
+
 
 
 void Process::execute_add(const std::string& args) {
@@ -679,11 +825,18 @@ std::string Process::get_current_timestamp() const {
 }
 
 //FOR SIMULATION OF VIRTUAL MEMORY ACCESS IN INSTRUCTION EXECUTION
+// Get virtual address for a variable within the symbol table segment (64 bytes, 32 vars max)
 size_t Process::getVirtualAddressForVar(const std::string& varName) const {
+    static constexpr size_t symbolTableBase = 0;  // Adjust if symbol table starts elsewhere
+    static constexpr size_t maxVars = 32;
+    static constexpr size_t varSize = 2;  // 2 bytes per variable (uint16)
+
     std::hash<std::string> hasher;
-    size_t m = (memorySize == 0) ? 1 : memorySize;
-    return hasher(varName) % m;
+    size_t varIndex = hasher(varName) % maxVars;
+    size_t virtualAddress = symbolTableBase + (varIndex * varSize);
+    return virtualAddress;
 }
+
 
 // Process.cpp
 

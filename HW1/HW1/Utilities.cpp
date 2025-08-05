@@ -448,13 +448,76 @@ bool isPowerOfTwo(int n) {
 	return (n & (n - 1)) == 0;
 }
 
-//TODO: Instructions may need to take space in memory
+//Instructions may need to take space in memory
+//
+//std::vector<std::string> generate_instructions() {
+//	uint32_t minInstructions = configManager.getMinInstructions();
+//	uint32_t maxInstructions = configManager.getMaxInstructions();
+//
+//	//TODO: EDIT Instructions for more variety
+//	static const std::string templates[] = {
+//		"DECLARE(var_x, 100)",
+//		"DECLARE(var_y, 50)",
+//		"ADD(var_x, var_x, var_y)",
+//		"SUBTRACT(var_x, var_y, var_x)",
+//		"SLEEP(300)",
+//		"SLEEP(2000)",
+//		"FOR([PRINT(\"Looping inside process\")], 2)",
+//		"FOR([ADD(var_x, var_x, 1)], 10)",
+//		"FOR([SUBTRACT(var_x, var_x, 1)], 10)",
+//		"PRINT(\"Hello world from process\")",
+//		"PRINT(\"We love CSOPESY <3\")",
+//		"PRINT(\"Value from: \" +var_x)",
+//		"DECLARE(var_a, 100)",
+//		"DECLARE(var_b, 700)", // should clamp to 65535
+//		"DECLARE(var_c, 0)",
+//		"DECLARE(var_d, 65535)",
+//		"WRITE(0x50, 200)",
+//		"READ(var_y, 0x50)",
+//		"DECLARE(var_big, 70000)",
+//		"READ(var_big, 0x07F)",
+//		//"WRITE(0xFFFFF, 123)",      // Out of range memory address
+//		//"WRITE(0x10, -5)",          // Negative value invalid
+//		//"WRITE(0x10, 70000)",       // Value too large
+//		//"WRITE(hello, 100)",        // Invalid address format
+//		//"READ(var_bad, 0xFFFFF)",   // Out of range address
+//		//"READ(var_bad2, hello)",    // Invalid address format
+//		//"READ(var_uninit, 0x2000)",  // Read uninitialized memory (should return 0)
+//	};
+//
+//
+//	std::random_device rd;
+//	std::mt19937 gen(rd());
+//	std::uniform_int_distribution<> instructionCountDist(minInstructions, maxInstructions);
+//	std::uniform_int_distribution<> templateIndexDist(0, sizeof(templates) / sizeof(templates[0]) - 1);
+//
+//	// Generate random number of instructions
+//	int numInstructions = instructionCountDist(gen);
+//
+//	std::vector<std::string> instructions;
+//	for (int i = 0; i < numInstructions; ++i) {
+//		std::string instr = templates[templateIndexDist(gen)];
+//		instructions.push_back(instr);
+//	}
+//
+//	return instructions;
+//}
+
 std::vector<std::string> generate_instructions() {
 	uint32_t minInstructions = configManager.getMinInstructions();
 	uint32_t maxInstructions = configManager.getMaxInstructions();
+	size_t maxMemPerProc = configManager.getMaxMemPerProc(); // e.g. 64 bytes
 
-	//TODO: EDIT Instructions for more variety
-	static const std::string templates[] = {
+	std::vector<std::string> instructions;
+
+	// Track used addresses for WRITE/READ (avoid duplicates in WRITE)
+	std::unordered_set<uint32_t> usedAddresses;
+
+	std::vector<std::string> variablePool = {
+		"var_a", "var_b", "var_c", "var_d", "var_x", "var_y"
+	};
+
+	std::vector<std::string> baseTemplates = {
 		"DECLARE(var_x, 100)",
 		"DECLARE(var_y, 50)",
 		"ADD(var_x, var_x, var_y)",
@@ -467,34 +530,57 @@ std::vector<std::string> generate_instructions() {
 		"PRINT(\"Hello world from process\")",
 		"PRINT(\"We love CSOPESY <3\")",
 		"PRINT(\"Value from: \" +var_x)",
-		//"WRITE(0x50, 200)",
-		//"READ(var_y, 0x50)",
-		//"DECLARE(var_big, 70000)",
-		//"READ(var_big, 0x100)",
-		//"WRITE(0xFFFFF, 123)",      // Out of range memory address
-		//"WRITE(0x10, -5)",          // Negative value invalid
-		//"WRITE(0x10, 70000)",       // Value too large
-		//"WRITE(hello, 100)",        // Invalid address format
-		//"READ(var_bad, 0xFFFFF)",   // Out of range address
-		//"READ(var_bad2, hello)",    // Invalid address format
-		//"READ(var_uninit, 0x2000)",  // Read uninitialized memory (should return 0)
-
+		"DECLARE(var_a, 100)",
+		"DECLARE(var_b, 70000)", // should clamp
+		"DECLARE(var_c, 0)",
+		"DECLARE(var_d, 65535)"
 	};
-
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution<> instructionCountDist(minInstructions, maxInstructions);
-	std::uniform_int_distribution<> templateIndexDist(0, sizeof(templates) / sizeof(templates[0]) - 1);
+	std::uniform_int_distribution<> countDist(minInstructions, maxInstructions);
+	std::uniform_int_distribution<> baseDist(0, baseTemplates.size() - 1);
+	std::uniform_int_distribution<> varDist(0, variablePool.size() - 1);
+	std::uniform_int_distribution<> valueDist(0, 70000); // test clamping
 
-	// Generate random number of instructions
-	int numInstructions = instructionCountDist(gen);
+	// Generate addresses within process memory bounds [0, maxMemPerProc-1]
+	std::uniform_int_distribution<uint32_t> addrDist(0, maxMemPerProc - 1);
 
-	std::vector<std::string> instructions;
-	for (int i = 0; i < numInstructions; ++i) {
-		std::string instr = templates[templateIndexDist(gen)];
-		instructions.push_back(instr);
+	int totalInstructions = countDist(gen);
+
+	for (int i = 0; i < totalInstructions; ++i) {
+		int choice = gen() % 6; // slightly change choice spread for variety
+
+		if (choice == 0 && !variablePool.empty()) {
+			// WRITE(addr, value)
+			uint32_t addr;
+			int attempts = 0;
+			do {
+				addr = addrDist(gen);
+				if (++attempts > 10) break; // avoid infinite loop if space exhausted
+			} while (usedAddresses.count(addr));
+
+			usedAddresses.insert(addr);
+			int value = valueDist(gen);
+			std::stringstream ss;
+			ss << "WRITE(0x" << std::setfill('0') << std::setw(4) << std::hex << addr << ", " << value << ")";
+			instructions.push_back(ss.str());
+		}
+		else if (choice == 1 && !usedAddresses.empty()) {
+			// READ(var, addr)
+			auto it = usedAddresses.begin();
+			std::advance(it, gen() % usedAddresses.size());
+
+			std::string var = variablePool[varDist(gen)];
+			std::stringstream ss;
+			ss << "READ(" << var << ", 0x" << std::setfill('0') << std::setw(4) << std::hex << *it << ")";
+			instructions.push_back(ss.str());
+		}
+		else {
+			// Base instruction
+			instructions.push_back(baseTemplates[baseDist(gen)]);
+		}
 	}
+
 	return instructions;
 }
-

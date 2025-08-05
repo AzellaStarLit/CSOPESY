@@ -35,6 +35,9 @@ private:
     size_t totalPageIns = 0;
     size_t totalPageOuts = 0;
 
+	// --- page fault handling ---
+    std::atomic<bool> lastPageFaultOccurred = false;
+
     // --- single backing store ---
     std::string  swapFilePath = "csopesy-backing-store.txt";
     std::fstream swapfile;
@@ -94,4 +97,6 @@ public:
 
     bool translate(int pid, size_t virtualAddress, size_t& physicalAddress);
 
+    bool wasPageFault() const;
+    void resetPageFaultFlag();
 };

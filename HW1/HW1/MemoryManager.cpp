@@ -364,9 +364,9 @@ bool MemoryManager::writeByte(int pid, size_t virtualAddress, char inByte) {
     memory[frameNum].data[offset] = inByte;
 
     Process* proc = processManager.get_process_by_pid(pid);
-    if (proc) {
-        auto& pageEntry = proc->getPageEntry(frameNum);
-        pageEntry.dirty = true;
+    if (Process* proc = processManager.get_process_by_pid(pid)) {
+        size_t pageNum = virtualAddress / frameSize;
+        proc->getPageEntry(pageNum).dirty = true;
     }
 
     return true;
@@ -374,44 +374,44 @@ bool MemoryManager::writeByte(int pid, size_t virtualAddress, char inByte) {
 
 
 bool MemoryManager::translate(int pid, size_t virtualAddress, size_t& physicalAddress) {
+    //lastPageFaultOccurred = false;  // reset
+
     Process* proc = processManager.get_process_by_pid(pid);
-    if (!proc) {
-        //std::cerr << "translate: Process " << pid << " not found.\n";
-        return false;
-    }
+    if (!proc) return false;
 
     size_t pageNum = virtualAddress / frameSize;
     size_t offset = virtualAddress % frameSize;
 
-    if (pageNum >= proc->pageTable.size()) {
-        //std::cerr << "translate: Page number " << pageNum << " out of range for PID " << pid << "\n";
-        return false;
-    }
+    if (pageNum >= proc->pageTable.size()) return false;
 
     auto& pageEntry = proc->getPageEntry(pageNum);
 
     if (!pageEntry.valid) {
+        // Page fault occurred
         if (!handlePageFault(proc, pageNum)) {
-            std::cerr << "translate: Page fault handling failed for PID " << pid << ", page " << pageNum << "\n";
+            std::cerr << "translate: Page fault handling failed\n";
             return false;
         }
+        lastPageFaultOccurred = true; // mark that it happened!
     }
 
     size_t frameNum = pageEntry.frameNumber;
-    if (frameNum >= memory.size()) {
-        //std::cerr << "translate: Frame number out of range\n";
-        return false;
-    }
+    if (frameNum >= memory.size()) return false;
 
     physicalAddress = frameNum * frameSize + offset;
-    if (physicalAddress >= memory.size() * frameSize) {
-        //std::cerr << "translate: Physical address out of range\n";
-        return false;
-    }
+    if (physicalAddress >= memory.size() * frameSize) return false;
 
     return true;
 }
 
+
+bool MemoryManager::wasPageFault() const {
+    return lastPageFaultOccurred;
+}
+
+void MemoryManager::resetPageFaultFlag() {
+    lastPageFaultOccurred = false; // reset the flag
+}
 
 // Already defined function — keep this
 bool MemoryManager::writeUInt16(int pid, uint32_t virtualAddress, uint16_t value) {

@@ -137,5 +137,8 @@ public:
     size_t getPageOuts() const { return pageOuts; }
 
     bool hasResidentPage() const;
+
+    std::string int_to_hex(size_t value) const;
+
 };
 
